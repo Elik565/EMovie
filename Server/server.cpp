@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 
+using json = nlohmann::json;
+
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Неправильно переданные параметры (логин, пароль)!\n";
@@ -17,7 +19,11 @@ int main(int argc, char* argv[]) {
 
     Queries queries;  // список запросов
 
-    PGresult* res = execute_query(conn, queries.show_movie_list);
+    PGresult* res = execute_query(conn, queries.show_movie_list);  
+    if (res) {
+        json json_res = pgresult_to_json(res);
+        std::string json_str = json_res.dump();
+    }
 
     close_connection(conn, res);
 
