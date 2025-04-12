@@ -19,5 +19,7 @@ int main(int argc, char* argv[]) {
 
     PGresult* res = execute_query(conn, queries.show_movie_list);
 
+    close_connection(conn, res);
+
     return 0;
 }

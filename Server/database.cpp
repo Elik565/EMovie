@@ -24,3 +24,8 @@ PGresult* execute_query(PGconn* conn, const std::string& query) {
 
     return res;
 }
+
+void close_connection(PGconn* conn, PGresult* res) {
+    PQclear(res);
+    PQfinish(conn);
+}

@@ -21,4 +21,6 @@ PGconn* connect_to_db(const std::string& conn_info);
 // функция выполнения sql-запроса
 PGresult* execute_query(PGconn* conn, const std::string& query);
 
+// функция закрытия соединения с базой данных
+void close_connection(PGconn* conn, PGresult* res);
 
