@@ -15,18 +15,6 @@ PGconn* connect_to_db(const std::string& conn_info) {
     return conn;
 }
 
-PGresult* execute_query(PGconn* conn, const std::string& query) {
-    PGresult* res = PQexec(conn, query.c_str());
-
-    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        std::cerr << "Ошибка выполнения запроса: " << PQerrorMessage(conn);
-        PQclear(res);
-        return nullptr;
-    }
-
-    return res;
-}
-
 json pgresult_to_json(PGresult* res) {
     json json_res = json::array();
 

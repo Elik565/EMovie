@@ -12,15 +12,16 @@ struct Movie {
 };
 
 // список запросов
-struct Queries {
+struct GetQueries {
     std::string show_movie_list = "SELECT title, year FROM movies LIMIT 10";
+};
+
+struct PostTemplates {
+    std::string add_movie = "INSERT INTO movies (id, title, year) VALUES (";
 };
 
 // функция для подключения к базе данных
 PGconn* connect_to_db(const std::string& conn_info);
-
-// функция выполнения sql-запроса
-PGresult* execute_query(PGconn* conn, const std::string& query);
 
 // функция преобразования PGresult в json
 nlohmann::json pgresult_to_json(PGresult* res);
