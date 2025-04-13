@@ -44,8 +44,3 @@ json pgresult_to_json(PGresult* res) {
 
     return json_res;
 }
-
-void close_connection(PGconn* conn, PGresult* res) {
-    PQclear(res);
-    PQfinish(conn);
-}

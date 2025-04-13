@@ -25,6 +25,4 @@ PGresult* execute_query(PGconn* conn, const std::string& query);
 // функция преобразования PGresult в json
 nlohmann::json pgresult_to_json(PGresult* res);
 
-// функция закрытия соединения с базой данных
-void close_connection(PGconn* conn, PGresult* res);
 
