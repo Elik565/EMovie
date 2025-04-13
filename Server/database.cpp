@@ -9,7 +9,7 @@ PGconn* connect_to_db(const std::string& conn_info) {
     if (PQstatus(conn) != CONNECTION_OK) {
         std::cerr << "Не удалось подключиться к базе данных: " << PQerrorMessage(conn);
         PQfinish(conn);
-        return nullptr;
+        exit(1);
     }
 
     return conn;
