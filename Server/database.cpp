@@ -3,16 +3,26 @@
 
 using json = nlohmann::json;
 
-PGconn* connect_to_db(const std::string& conn_info) {
-    PGconn* conn = PQconnectdb(conn_info.c_str());
+EMDatabase::EMDatabase(const std::string& conn_info) {
+    conn = PQconnectdb(conn_info.c_str());  // пытаемся подключиться к бд
 
     if (PQstatus(conn) != CONNECTION_OK) {
         std::cerr << "Не удалось подключиться к базе данных: " << PQerrorMessage(conn);
         PQfinish(conn);
         exit(1);
     }
+}
 
-    return conn;
+EMDatabase::~EMDatabase() {
+    PQfinish(conn);
+}
+
+PGresult* EMDatabase::execute_query(const std::string& sql_query) {
+    return PQexec(conn, sql_query.c_str());
+} 
+
+std::string EMDatabase::get_sql_error() {
+    return PQerrorMessage(conn);
 }
 
 json pgresult_to_json(PGresult* res) {
