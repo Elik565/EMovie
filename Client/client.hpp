@@ -13,6 +13,9 @@ public:
     // конструктор
     EMClient(const std::string& host, const int port) : client(host, port) {};
 
+    // деструктор
+    ~EMClient();
+
     // метод ввода логина и пароля (или запрос на регистрацию)
     void enter_login_password();
 
