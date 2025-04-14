@@ -18,6 +18,7 @@ struct GetQueries {
 
 struct PostTemplates {
     std::string add_movie = "INSERT INTO movies (id, title, year) VALUES (";
+    std::string auth = "SELECT can_modify FROM users WHERE username = ";
 };
 
 // функция для подключения к базе данных

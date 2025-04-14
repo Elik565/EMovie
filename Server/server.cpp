@@ -30,37 +30,42 @@ void handle_get(httplib::Server& server, PGconn* conn, const std::string& route,
     });
 }
 
-std::string get_sql_query(const json& body, const std::string& sql_template, Response& response) {
+std::string get_add_movie_query(const json& body, const std::string& sql_template, Response& response) {
     std::string sql_query = sql_template;
+
+    // проверяем наличие всех необходимых полей
+    if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
+        response.status = 400;
+        response.set_content("{\"error\": \"Ожидаются поля: id (int), title (text), year (int)!\"}", "application/json");
+        return "";
+    }
+
+    // получаем значения полей
+    int id = body["id"].get<int>();
+    std::string title = body["title"].get<std::string>();
+    int year = body["year"].get<int>();
+
+    // формируем запрос
+    sql_query += std::to_string(id) + ", ";
+    sql_query += "'" + title + "', ";
+    sql_query += std::to_string(year) + ")";
+
+    return sql_query;
+}
+
+std::string get_sql_query(const json& body, const std::string& sql_template, Response& response) {
     PostTemplates pt;
 
     try {
         if (sql_template == pt.add_movie) {// если шаблон добавления фильма
-            // проверяем наличие всех необходимых полей
-            if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
-                response.status = 400;
-                response.set_content("{\"error\": \"Ожидаются поля: id (int), title (text), year (int)!\"}", "application/json");
-                return "";
-            }
-
-            // получаем значения полей
-            int id = body["id"].get<int>();
-            std::string title = body["title"].get<std::string>();
-            int year = body["year"].get<int>();
-
-            // формируем запрос
-            sql_query += std::to_string(id) + ", ";
-            sql_query += "'" + title + "', ";
-            sql_query += std::to_string(year) + ")";
+            return get_add_movie_query(body, sql_template, response);
         }
     } 
     catch (const std::exception& exc) {  // этот блок обрабатывает исключения
         response.status = 400;
-        response.set_content("{\"error\": \"Ошибка при формировании sql-запроса. Проверьте правильность типов данных!\"}", "application/json");
+        response.set_content("{\"error\": \"Ошибка при формировании sql-запроса. Проверьте типы данных.\"}", "application/json");
         return "";
     }
-
-    return sql_query;
 }
 
 void handle_post(httplib::Server& server, PGconn* conn, const std::string& route, const std::string& sql_template) {
@@ -88,7 +93,6 @@ void handle_post(httplib::Server& server, PGconn* conn, const std::string& route
 
             PQclear(result);
             response.status = 200;
-            response.set_content("{\"success\": \"Фильм добавлен!\"}", "application/json");
         }   
         catch (const std::exception& exc) {  // этот блок обрабатывает исключения
             // ошибка при парсинге json
@@ -104,4 +108,5 @@ void setup_routes(httplib::Server& server, PGconn* conn) {
 
     handle_get(server, conn, "/show_movie_list", gq.show_movie_list);  // показать список фильмов
     handle_post(server, conn, "/add_movie", pt.add_movie);  // добавить фильм
+    handle_post(server, conn, "/auth", pt.auth);  // аутентификация 
 }
