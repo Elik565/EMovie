@@ -29,7 +29,12 @@ void enter_login_password(std::string& login, std::string& password) {
 
 bool authentication(Client& client, const std::string& login, const std::string& password) {
     json body = { {"login", login}, {"password", password} };
-    auto result = client.Post("/auth", body.dump(), "application/json");
+    Result result = client.Post("/auth", body.dump(), "application/json");
 
-    return false;
+    if (!result || result->status != 200) {
+        std::cout << "Ошибка авторизации: " << (result ? result->body : "Нет ответа от сервера") << "\n";
+        return false;
+    }
+
+    return true;
 }

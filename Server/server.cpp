@@ -53,19 +53,45 @@ std::string get_add_movie_query(const json& body, const std::string& sql_templat
     return sql_query;
 }
 
+std::string get_auth_query(const json& body, const std::string& sql_template, Response& response) {
+    std::string sql_query = sql_template;
+
+    // проверяем наличие всех необходимых полей
+    if (!body.contains("login") || !body.contains("password")) {
+        response.status = 400;
+        response.set_content("{\"error\": \"Ожидаются поля: login (text), password (text)!\"}", "application/json");
+        return "";
+    }
+
+    // получаем значения полей
+    std::string login = body["login"].get<std::string>();
+    std::string password = body["password"].get<std::string>();
+
+    // формируем запрос
+    sql_query += "'" + login + "' AND password = ";
+    sql_query += "'" + password + "'";
+
+    return sql_query;
+}
+
 std::string get_sql_query(const json& body, const std::string& sql_template, Response& response) {
     PostTemplates pt;
 
     try {
-        if (sql_template == pt.add_movie) {// если шаблон добавления фильма
+        if (sql_template == pt.add_movie) {  // если шаблон добавления фильма
             return get_add_movie_query(body, sql_template, response);
+        }
+
+        if (sql_template == pt.auth) {  // если шаблон аутентификации
+            return get_auth_query(body, sql_template, response);
         }
     } 
     catch (const std::exception& exc) {  // этот блок обрабатывает исключения
         response.status = 400;
         response.set_content("{\"error\": \"Ошибка при формировании sql-запроса. Проверьте типы данных.\"}", "application/json");
-        return "";
     }
+
+    return "";
 }
 
 void handle_post(httplib::Server& server, PGconn* conn, const std::string& route, const std::string& sql_template) {
@@ -82,12 +108,22 @@ void handle_post(httplib::Server& server, PGconn* conn, const std::string& route
 
             PGresult* result = PQexec(conn, sql_query.c_str());  // выполняем запрос
 
+            if (PQresultStatus(result) == PGRES_TUPLES_OK) {
+                int rows = PQntuples(result);
+                if (rows == 0) {  // если вернулось 0 строк
+                    response.status = 404;
+                    response.set_content("{\"error\": \"Пользователь не найден!\"}", "application/json");
+                    PQclear(result);
+                    return;
+                }
+            }
             // если есть ошибка при выполнении sql-запроса
-            if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+            else if (PQresultStatus(result) != PGRES_COMMAND_OK) {
                 std::string error_msg = PQerrorMessage(conn);  // получаем текст ошибки
 
                 response.status = 500;
                 response.set_content("{\"error\": \"" + error_msg + "\"}", "application/json");
+                PQclear(result);
                 return;
             }
 
