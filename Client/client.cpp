@@ -4,7 +4,7 @@
 using namespace httplib;
 using json = nlohmann::json;
 
-void enter_login_password(std::string& login, std::string& password) {
+void EMClient::enter_login_password() {
     std::string answer;
     bool correct_answer = false;
     while (!correct_answer) {
@@ -16,6 +16,7 @@ void enter_login_password(std::string& login, std::string& password) {
         }
     }
 
+    //TODO: проверять что введено ровно одно значение
     if (answer == "y") {  // если уже зарегистрирован
         std::cout << "Введите логин: ";
         std::cin >> login;
@@ -27,9 +28,9 @@ void enter_login_password(std::string& login, std::string& password) {
     }
 }
 
-bool authentication(Client& client, const std::string& login, const std::string& password) {
+bool EMClient::authentication() {
     json body = { {"login", login}, {"password", password} };
-    Result result = client.Post("/auth", body.dump(), "application/json");
+    Result result = client.Post("/auth", body.dump(), "application/json");  // отправляем post-запрос серверу
 
     if (!result || result->status != 200) {
         std::cout << "Ошибка авторизации: " << (result ? result->body : "Нет ответа от сервера") << "\n";

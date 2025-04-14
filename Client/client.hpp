@@ -2,6 +2,24 @@
 
 #include <cpp-httplib/httplib.h>
 
-void enter_login_password(std::string& login, std::string& password);
+class EMClient {
+private:
+    std::string login;
+    std::string password;
+    bool authenticated = false;  // флаг, авторизован ли пользователь
+    httplib::Client client;  // http-клиент для общения с сервером
 
-bool authentication(httplib::Client& client, const std::string& login, const std::string& password);
+public:
+    // конструктор
+    EMClient(const std::string& host, const int port) : client(host, port) {};
+
+    // метод ввода логина и пароля (или запрос на регистрацию)
+    void enter_login_password();
+
+    // метод аутентификации клиента
+    bool authentication();
+};
+
+
+
+

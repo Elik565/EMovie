@@ -5,16 +5,13 @@
 using namespace httplib;
 
 int main() {
-    Client client("localhost", 8080);
-    std::string login, password;
-    
-    enter_login_password(login, password);
+    EMClient emclient ("localhost", 8080);  // создаем клиента
 
-    while (!authentication(client, login, password)) {
-        enter_login_password(login, password);
+    emclient.enter_login_password();
+
+    while (!emclient.authentication()) {  // пока не выполнится аутентификация
+        emclient.enter_login_password();  // ввод логига и пароля (либо регистрация)
     }
 
-
-    
     return 0;
 }
