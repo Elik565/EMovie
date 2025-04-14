@@ -2,7 +2,6 @@
 
 #include <libpq-fe.h>
 #include <string>
-#include <nlohmann/json.hpp>
 
 // список запросов
 struct GetQueries {
@@ -31,8 +30,5 @@ public:
     // метод получения ошибки при выполнении sql-запроса
     std::string get_sql_error();
 };
-
-// функция преобразования PGresult в json
-nlohmann::json pgresult_to_json(PGresult* res);
 
 
