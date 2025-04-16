@@ -28,7 +28,7 @@ void EMClient::enter_login_password() {
     }
 }
 
-bool EMClient::authentication() {
+bool EMClient::authorization() {
     json body = { {"login", login}, {"password", password} };
     Result result = client.Post("/auth", body.dump(), "application/json");  // отправляем post-запрос серверу
 
@@ -36,6 +36,11 @@ bool EMClient::authentication() {
         std::cout << "Ошибка авторизации: " << (result ? result->body : "Нет ответа от сервера") << "\n";
         return false;
     }
+
+    // если авторизация успешна
+    token = json::parse(result->body)["token"];
+
+    headers = { {"Authorization", "Bearer " + token} };
 
     return true;
 }

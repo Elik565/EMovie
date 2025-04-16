@@ -9,7 +9,7 @@ int main() {
 
     emclient.enter_login_password();
 
-    while (!emclient.authentication()) {  // пока не выполнится аутентификация
+    while (!emclient.authorization()) {  // пока не выполнится авторизации
         emclient.enter_login_password();  // ввод логига и пароля (либо регистрация)
     }
 
