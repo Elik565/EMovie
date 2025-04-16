@@ -4,13 +4,8 @@
 #include <string>
 
 // список запросов
-struct GetQueries {
+struct Queries {
     std::string show_movie_list = "SELECT title, year FROM movies LIMIT 10";
-};
-
-struct PostTemplates {
-    std::string add_movie = "INSERT INTO movies (id, title, year) VALUES (";
-    std::string auth = "SELECT 1 FROM users WHERE username = ";
 };
 
 class EMDatabase {

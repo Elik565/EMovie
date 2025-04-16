@@ -24,69 +24,6 @@ json pgresult_to_json(PGresult* res) {
     return json_res;
 }
 
-std::string get_add_movie_query(const json& body, const std::string& sql_template, Response& response) {
-    std::string sql_query = sql_template;
-
-    // проверяем наличие всех необходимых полей
-    if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
-        response.status = 400;
-        response.set_content("{\"error\": \"Ожидаются поля: id (int), title (text), year (int)!\"}", "application/json");
-        return "";
-    }
-
-    // получаем значения полей
-    int id = body["id"].get<int>();
-    std::string title = body["title"].get<std::string>();
-    int year = body["year"].get<int>();
-
-    // формируем запрос
-    sql_query += std::to_string(id) + ", ";
-    sql_query += "'" + title + "', ";
-    sql_query += std::to_string(year) + ")";
-
-    return sql_query;
-}
-
-std::string get_auth_query(const json& body, const std::string& sql_template, Response& response) {
-    std::string sql_query = sql_template;
-
-    // проверяем наличие всех необходимых полей
-    if (!body.contains("login") || !body.contains("password")) {
-        response.status = 400;
-        response.set_content("{\"error\": \"Ожидаются поля: login (text), password (text)!\"}", "application/json");
-        return "";
-    }
-
-    // получаем значения полей
-    std::string login = body["login"].get<std::string>();
-    std::string password = body["password"].get<std::string>();
-
-    // формируем запрос
-    sql_query += "'" + login + "' AND password = ";
-    sql_query += "'" + password + "'";
-
-    return sql_query;
-}
-
-std::string get_sql_query(const json& body, const std::string& sql_template, Response& response) {
-    PostTemplates pt;
-
-    try {
-        if (sql_template == pt.add_movie) {  // если шаблон добавления фильма
-            return get_add_movie_query(body, sql_template, response);
-        }
-
-        if (sql_template == pt.auth) {  // если шаблон аутентификации
-            return get_auth_query(body, sql_template, response);
-        }
-    } 
-    catch (const std::exception& exc) {  // этот блок обрабатывает исключения
-        response.status = 400;
-        response.set_content("{\"error\": \"Ошибка при формировании sql-запроса! Проверьте типы данных.\"}", "application/json");
-    }
-
-    return "";
-}
 
 EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
     setup_routes();
@@ -96,13 +33,17 @@ EMServer::~EMServer() {
     // т.к. db будет автоматически уничтожен, то вызовется его деструктор
 }
 
-void EMServer::setup_routes() {
-    GetQueries gq;  // список запросов (для GET)
-    PostTemplates pt;  // список шаблонов (для POST)
+void EMServer::set_error(httplib::Response& response, const int status, const std::string& message) {
+    response.status = status;
+    response.set_content("{\"error\": \"" + message + "\"}", "application/json");
+}
 
-    handle_get("/show_movie_list", gq.show_movie_list);  // показать список фильмов
-    handle_post("/add_movie", pt.add_movie);  // добавить фильм
-    handle_post("/auth", pt.auth);  // аутентификация клиента
+void EMServer::setup_routes() {
+    Queries q;
+
+    handle_get("/show_movie_list", q.show_movie_list);  // показать список фильмов
+    handle_post("/add_movie");  // добавить фильм
+    handle_post("/auth");  // аутентификация клиента
 }
 
 void EMServer::handle_get(const std::string& route, const std::string& sql_query) {
@@ -114,8 +55,7 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
         PGresult* sql_result = db.execute_query(sql_query);
 
         if (PQresultStatus(sql_result) != PGRES_TUPLES_OK) {
-            response.status = 500;
-            response.set_content("{\"error\":\"" + db.get_sql_error() + "\"}", "application/json");
+            set_error(response, 500, db.get_sql_error());
             PQclear(sql_result);
             return;
         }
@@ -126,46 +66,103 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
     });
 }
 
-void EMServer::handle_post(const std::string& route, const std::string& sql_template) {
-    server.Post(route, [this, sql_template](const Request& request, Response& response) {
+PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
+    // проверяем наличие всех необходимых полей
+    if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
+        set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int)!");
+        return nullptr;
+    }
+
+    try {
+        // получаем значения полей
+        int id = body["id"].get<int>();
+        std::string title = body["title"].get<std::string>();
+        int year = body["year"].get<int>();
+
+        // формируем sql-запрос
+        std::string sql_query = "INSERT INTO movies (id, title, year) VALUES (" + std::to_string(id) + ", ";
+        sql_query += "'" + title + "', ";
+        sql_query += std::to_string(year) + ")";
+
+        return db.execute_query(sql_query);
+    }
+    catch (const std::exception& exc) {
+        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных.");
+        return nullptr;
+    }
+}
+
+PGresult* EMServer::handle_auth(const json& body, Response& response) {
+    // проверяем наличие всех необходимых полей
+    if (!body.contains("login") || !body.contains("password")) {
+        set_error(response, 400, "Ожидаются поля: login (text), password (text)!");
+        return nullptr;
+    }
+
+    try {
+        // получаем значения полей
+        std::string login = body["login"].get<std::string>();
+        std::string password = body["password"].get<std::string>();
+
+        // формируем запрос
+        std::string sql_query = "SELECT 1 FROM users WHERE username = ";
+        sql_query += "'" + login + "' AND password = ";
+        sql_query += "'" + password + "'";
+
+        PGresult* sql_result = db.execute_query(sql_query);  // выполняем запрос
+
+        if (PQresultStatus(sql_result) == PGRES_TUPLES_OK) {
+            int rows = PQntuples(sql_result);
+            if (rows == 0) {  // если вернулось 0 строк
+                set_error(response, 404, "Пользователь не найден!");
+                PQclear(sql_result);
+                return nullptr;
+            }
+        }
+
+        return sql_result;
+    }
+    catch (const std::exception& exc) {
+        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных");
+        return nullptr;
+    }
+}
+
+void EMServer::handle_post(const std::string& route) {
+    server.Post(route, [this, route](const Request& request, Response& response) {
         std::cout << "Получен POST-запрос с путем: " << request.path << std::endl;
 
         try {
             auto body = json::parse(request.body);  // парсим json-тело запроса
-            std::string sql_query = get_sql_query(body, sql_template, response);  // формируем полный sql-запрос
-
-            if (sql_query.empty()) {
+            PGresult* sql_result = nullptr;
+            
+            if (route == "/add_movie") {
+                sql_result = handle_add_movie(body, response);
+            }
+            else if (route == "/auth") {
+                sql_result = handle_auth(body, response);
+            }
+            else {
+                set_error(response, 404, "Маршрут не найден!");
                 return;
             }
 
-            PGresult* result = db.execute_query(sql_query);  // выполняем запрос
-
-            if (PQresultStatus(result) == PGRES_TUPLES_OK) {
-                int rows = PQntuples(result);
-                if (rows == 0) {  // если вернулось 0 строк
-                    response.status = 404;
-                    response.set_content("{\"error\": \"Пользователь не найден!\"}", "application/json");
-                    PQclear(result);
-                    return;
-                }
-            }
-            // если есть ошибка при выполнении sql-запроса
-            else if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-                std::string error_msg = db.get_sql_error();  // получаем текст ошибки
-
-                response.status = 500;
-                response.set_content("{\"error\": \"" + error_msg + "\"}", "application/json");
-                PQclear(result);
+            if (!sql_result) {
                 return;
             }
 
-            PQclear(result);
+            if (PQresultStatus(sql_result) != PGRES_COMMAND_OK) {
+                set_error(response, 500, db.get_sql_error());
+                PQclear(sql_result);
+                return;
+            }
+
+            PQclear(sql_result);
             response.status = 200;
         }   
         catch (const std::exception& exc) {  // этот блок обрабатывает исключения
             // ошибка при парсинге json
-            response.status = 400;
-            response.set_content("{\"error\": \"Некорректный JSON!\"}", "application/json");
+            set_error(response, 400, "Некорректный JSON!");
         }
     });
 }
