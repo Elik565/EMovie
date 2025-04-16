@@ -7,6 +7,9 @@
 // функция преобразования результата sql в json
 nlohmann::json pgresult_to_json(PGresult* res);
 
+// функция генерации токена
+std::string generate_token();
+
 class EMServer {
 private:
     httplib::Server server;

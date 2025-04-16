@@ -2,6 +2,7 @@
 #include "server.hpp"
 #include <iostream>
 #include <cpp-httplib/httplib.h>
+#include <random>
 
 using json = nlohmann::json;
 using namespace httplib;
@@ -22,6 +23,20 @@ json pgresult_to_json(PGresult* res) {
     }
 
     return json_res;
+}
+
+std::string generate_token() {
+    const std::string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, chars.size() - 1);
+
+    std::string token;
+    for (size_t i = 0; i < 16; ++i) {
+        token += chars[distrib(gen)];
+    }
+
+    return token;
 }
 
 
@@ -120,7 +135,13 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
             }
         }
 
-        return sql_result;
+        // если пользователь найден
+        std::string token = generate_token();
+        json json_response = { {"message", "Успешная авторизация!"}, {"token", token} };
+        response.set_content(json_response.dump(), "application/json");
+        response.status = 200;
+
+        return nullptr;  // уже отправили ответ
     }
     catch (const std::exception& exc) {
         set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных");
