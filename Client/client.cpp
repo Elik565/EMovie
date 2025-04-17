@@ -32,13 +32,14 @@ bool EMClient::authorization() {
     Result result = client.Post("/auth", body.dump(), "application/json");  // отправляем post-запрос серверу
 
     if (!result || result->status != 200) {
-        std::cout << "Ошибка авторизации: " << (result ? result->body : "нет ответа от сервера!") << "\n";
+        std::cerr << "Ошибка авторизации: " << (result ? result->body : "нет ответа от сервера!") << "\n";
         return false;
     }
 
     // если авторизация успешна
+    std::cout << "Авторизация успешна!\n\n";
     token = json::parse(result->body)["token"];
-
+    is_admin = json::parse(result->body)["is_admin"];
     headers = { {"Authorization", "Bearer " + token} };
 
     return true;

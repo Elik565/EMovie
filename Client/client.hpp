@@ -10,7 +10,7 @@ private:
     std::string token;
     httplib::Client client;  // http-клиент для общения с сервером
     httplib::Headers headers;  // заголовки для запросов
-    bool authenticated = false;  // флаг, авторизован ли пользователь
+    bool is_admin = false;  // флаг, является ли клиент администратором
 
     // метод отправки GET-запроса
     nlohmann::json send_get(const std::string& route);
