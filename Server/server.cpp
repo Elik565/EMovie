@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cpp-httplib/httplib.h>
 #include <random>
+#include <string>
 
 using json = nlohmann::json;
 using namespace httplib;
@@ -61,11 +62,32 @@ void EMServer::setup_routes() {
     handle_post("/auth");  // аутентификация клиента
 }
 
+bool EMServer::is_authorized(const httplib::Request& request, httplib::Response& response){
+    std::string auth_header = request.get_header_value("Authorization");
+
+    if (auth_header.substr(0, 7) != "Bearer ") {
+        set_error(response, 401, "Не передан токен!");
+        return false;
+    }
+
+    std::string token = auth_header.substr(7);  // "Bearer " — 7 символов
+    if (sessions.find(token) == sessions.end()) {
+        set_error(response, 401, "Пользователь не авторизован!");
+        return false;
+    }
+
+    return true;
+}
+
 void EMServer::handle_get(const std::string& route, const std::string& sql_query) {
     // лямбда захватывает поля текущего класса и sql-запрос
     // request и response - это параметры лямбды
     server.Get(route, [this, sql_query](const Request& request, Response& response) {
         std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
+
+        if (!is_authorized(request, response)) {
+            return;
+        }
 
         PGresult* sql_result = db.execute_query(sql_query);
 

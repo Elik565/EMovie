@@ -27,8 +27,8 @@ private:
     // метод настройки маршрутов сервера
     void setup_routes();
 
-    // метод проверки авторизации клиента
-    bool is_authorized(const std::string& token) const;
+    // метод проверки авторизации пользователя
+    bool is_authorized(const httplib::Request& request, httplib::Response& response);
 
     // метод обработки GET-запроса
     void handle_get(const std::string& route, const std::string& sql_query);
