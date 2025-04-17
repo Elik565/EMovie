@@ -120,7 +120,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
         std::string password = body["password"].get<std::string>();
 
         // формируем запрос
-        std::string sql_query = "SELECT 1 FROM users WHERE username = ";
+        std::string sql_query = "SELECT can_modify FROM users WHERE username = ";
         sql_query += "'" + login + "' AND password = ";
         sql_query += "'" + password + "'";
 
@@ -137,7 +137,11 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
 
         // если пользователь найден
         std::string token = generate_token();
-        json json_response = { {"message", "Успешная авторизация!"}, {"token", token} };
+        sessions[token].login = login;
+        sessions[token].is_admin = (PQgetvalue(sql_result, 0, 0)[0] == 't');
+
+        PQclear(sql_result);
+        json json_response = { {"message", "Успешная авторизация!"}, {"token", token}, {"is_admin", sessions[token].is_admin} };
         response.set_content(json_response.dump(), "application/json");
         response.status = 200;
 

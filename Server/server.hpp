@@ -10,17 +10,25 @@ nlohmann::json pgresult_to_json(PGresult* res);
 // функция генерации токена
 std::string generate_token();
 
+struct SessionInfo {
+    std::string login;
+    bool is_admin;
+};
+
 class EMServer {
 private:
     httplib::Server server;
     EMDatabase db;
-    std::unordered_map<std::string, std::string> sessions;
+    std::unordered_map<std::string, SessionInfo> sessions;  // токен и SessionInfo
 
     // метод установки сообщения об ошибке
     void set_error(httplib::Response& response, const int status, const std::string& message);
 
     // метод настройки маршрутов сервера
     void setup_routes();
+
+    // метод проверки авторизации клиента
+    bool is_authorized(const std::string& token) const;
 
     // метод обработки GET-запроса
     void handle_get(const std::string& route, const std::string& sql_query);
@@ -33,9 +41,6 @@ private:
 
     // метод обработки POST-запроса
     void handle_post(const std::string& route);
-
-    std::string create_session(const std::string& login);
-    bool is_authorized(const std::string& token) const;
 
 public:
     // конструктор
