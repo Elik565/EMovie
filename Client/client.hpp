@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cpp-httplib/httplib.h>
+#include <nlohmann/json.hpp>
 
 class EMClient {
 private:
@@ -10,6 +11,9 @@ private:
     httplib::Client client;  // http-клиент для общения с сервером
     httplib::Headers headers;  // заголовки для запросов
     bool authenticated = false;  // флаг, авторизован ли пользователь
+
+    // метод отправки GET-запроса
+    nlohmann::json send_get(const std::string& route);
 
 public:
     // конструктор
@@ -23,6 +27,8 @@ public:
 
     // метод авторизации клиента
     bool authorization();
+
+    void show_movie_list();
 };
 
 

@@ -1,5 +1,4 @@
 #include "client.hpp"
-#include <nlohmann/json.hpp>
 
 using namespace httplib;
 using json = nlohmann::json;
@@ -33,7 +32,7 @@ bool EMClient::authorization() {
     Result result = client.Post("/auth", body.dump(), "application/json");  // отправляем post-запрос серверу
 
     if (!result || result->status != 200) {
-        std::cout << "Ошибка авторизации: " << (result ? result->body : "Нет ответа от сервера") << "\n";
+        std::cout << "Ошибка авторизации: " << (result ? result->body : "нет ответа от сервера!") << "\n";
         return false;
     }
 
@@ -44,3 +43,37 @@ bool EMClient::authorization() {
 
     return true;
 }
+
+json EMClient::send_get(const std::string& route) {
+    Result result = client.Get(route, headers);
+
+    if (result->status == 200 && result) {
+        return json::parse(result->body);
+    }
+    else if (result) {
+        std::cerr << "Ошибка " << result->status << ": " << result->body << "\n";
+    }
+    else {
+        std::cerr << "Не удалось подключиться к серверу!\n";
+    }
+
+    return {};
+ }
+
+ void EMClient::show_movie_list() {
+    json movies = send_get("/show_movie_list");
+    
+    if (!movies.empty()) {
+        std::cout << "\tСписок фильмов:\n";
+        for (auto it = movies.begin(); it != movies.end(); ++it) {
+            const auto& movie = *it;
+            std::cout << "\t-" << movie["title"] << " (" << movie["year"] << ")";
+            if (std::next(it) != movies.end()) {
+                std::cout << ";\n";
+            } else {
+                std::cout << "\n";
+            }
+        }
+        std::cout << "\n";
+    }
+ }

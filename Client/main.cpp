@@ -9,8 +9,26 @@ int main() {
 
     emclient.enter_login_password();
 
-    while (!emclient.authorization()) {  // пока не выполнится авторизации
+    while (!emclient.authorization()) {  // пока не выполнится авторизация
         emclient.enter_login_password();  // ввод логига и пароля (либо регистрация)
+    }
+
+    std::string answer;
+    while(true) {
+        std::cout << "\tМеню действий:\n";
+        std::cout << "1 - Показать список фильмов;\n";
+        std::cout << "exit - Выйти\n";
+
+        std::cout << "Ввод: ";
+        std::cin >> answer;
+
+        if (answer == "1") {
+            emclient.show_movie_list();
+        }
+
+        if (answer == "exit") {
+            break;
+        }
     }
 
     return 0;
