@@ -12,7 +12,6 @@ private:
     std::string token;
     httplib::Client client;  // http-клиент для общения с сервером
     httplib::Headers headers;  // заголовки для http-запросов
-    bool is_admin = false;  // флаг, является ли клиент администратором
 
     // метод отправки GET-запроса
     nlohmann::json send_get(const std::string& route);
@@ -24,6 +23,8 @@ private:
     void logout();
 
 public:
+    bool is_admin = false;  // флаг, является ли клиент администратором
+
     // конструктор
     EMClient(const std::string& host, const int port) : client(host, port) {};  // инициализирует поле client
 
@@ -38,6 +39,9 @@ public:
 
     // метод отображения списка фильмов
     void show_movie_list();
+
+    // метод добавления фильма
+    void add_movie();
 };
 
 

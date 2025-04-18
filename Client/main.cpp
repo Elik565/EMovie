@@ -18,6 +18,12 @@ int main() {
         std::cout << "\tМеню действий:\n";
         std::cout << "1 - Показать список фильмов;\n";
         std::cout << "2 - Выйти из профиля;\n";
+
+        // действия для администратора
+        if (emclient.is_admin) {
+            std::cout << "3 - Добавить фильм;\n";
+        }
+
         std::cout << "exit - Выйти\n\n";
 
         std::cout << "Ввод: ";
@@ -25,6 +31,9 @@ int main() {
 
         if (answer == "1") {
             emclient.show_movie_list();
+        }
+        else if (answer == "3" && emclient.is_admin) {
+            emclient.add_movie();
         }
 
         if (answer == "exit") {

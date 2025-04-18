@@ -4,14 +4,14 @@ using namespace httplib;
 using json = nlohmann::json;
 
 json check_http_result(Result& result) {
-    if (result->status == 200 && result) {
-        return json::parse(result->body);
-    }
-    else if (result) {
-        std::cerr << "Ошибка " << result->status << ": " << result->body << "\n";
-    }
-    else {
-        std::cerr << "Нет ответа от сервера!\n";
+    if (result) {
+        if (result->status == 200) {
+            return json::parse(result->body);
+        } else {
+            std::cerr << "Ошибка " << result->status << ": " << result->body << "\n\n";
+        }
+    } else {
+        std::cerr << "Ошибка: нет ответа от сервера!\n\n";
     }
 
     return {};
@@ -52,15 +52,15 @@ void EMClient::enter_login_password() {
         }
     }
 
-    //TODO: проверять что введено ровно одно значение
     if (answer == "y") {  // если уже зарегистрирован
         std::cout << "Введите логин: ";
         std::cin >> login;
         std::cout << "Введите пароль: ";
         std::cin >> password;
     }
-    else {
-        // регистрация
+    else if (answer == "n") {
+
+        //registration();
     }
 }
 
@@ -99,10 +99,33 @@ void EMClient::show_movie_list() {
     }
 }
 
+void EMClient::add_movie() {
+    // все делаем строками, т.к. на сервере есть обработка неверных типов данных
+    std::string id;
+    std::string title;
+    std::string year;
+
+    std::cout << "Введите id: ";
+    std::cin >> id;
+    std::cout << "Введите название: ";
+    std::cin.ignore();
+    std::getline(std::cin, title);
+    std::cout << "Введите год: ";
+    std::cin >> year;
+
+    json body = { {"id", id}, {"title", title}, {"year", year} };
+
+    json result = send_post("/add_movie", body);
+
+    if (!result.empty()) {
+        std::cout << result["message"] << "\n";
+    }
+}
+
 void EMClient::logout() {
     json result = send_post("/logout", {});
 
     if (!result.empty()) {
-        std::cout << result["message"] << "\n";
+        std::cout << result["message"] << "\n\n";
     }
 }
