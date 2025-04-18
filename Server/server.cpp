@@ -57,6 +57,15 @@ std::string get_token_from_request(const Request& request, Response& response) {
     return auth_header.substr(7);  // "Bearer " — 7 символов
 }
 
+PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
+    try {
+        return func();
+    } catch (...) {
+        set_error(response, 400, "Ошибка при формировании sql-запроса!");
+        return nullptr;
+    }
+}
+
 
 EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
     setup_routes();  // настраиваем маршруты
@@ -139,7 +148,7 @@ PGresult* EMServer::handle_reg(const json& body, Response& response) {
         return nullptr;
     }
 
-    try {
+    return safe_sql_query(response, [&] {
         // получаем значения полей
         std::string login = body["login"].get<std::string>();
         std::string password = body["password"].get<std::string>();
@@ -150,11 +159,7 @@ PGresult* EMServer::handle_reg(const json& body, Response& response) {
         sql_query += "'" + password + "')";
 
         return db.execute_query(sql_query);  // выполняем запрос
-    }
-    catch (const std::exception& exc) {
-        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных");
-        return nullptr;
-    }
+    });
 }
 
 PGresult* EMServer::handle_auth(const json& body, Response& response) {
@@ -164,7 +169,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
         return nullptr;
     }
 
-    try {
+    return safe_sql_query(response, [&]() -> PGresult* {
         // получаем значения полей
         std::string login = body["login"].get<std::string>();
         std::string password = body["password"].get<std::string>();
@@ -197,11 +202,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
         }
 
         return sql_result;
-    }
-    catch (const std::exception& exc) {
-        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных");
-        return nullptr;
-    }
+    });
 }
 
 PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
@@ -211,7 +212,7 @@ PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
         return nullptr;
     }
 
-    try {
+    return safe_sql_query(response, [&] {
         // получаем значения полей
         int id = std::stoi(body["id"].get<std::string>());
         std::string title = body["title"].get<std::string>();
@@ -223,11 +224,7 @@ PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
         sql_query += std::to_string(year) + ")";
 
         return db.execute_query(sql_query);
-    }
-    catch (const std::exception& exc) {
-        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных.");
-        return nullptr;
-    }
+    });
 }
 
 void EMServer::handle_logout(const Request& request, Response& response) {

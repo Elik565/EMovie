@@ -16,6 +16,9 @@ void set_error(httplib::Response& response, const int status, const std::string&
 // функция получения токена из запроса
 std::string get_token_from_request(const httplib::Request& request, httplib::Response& response);
 
+// функция обработки исключений при формировании sql-запроса
+PGresult* safe_sql_query(httplib::Response& response, std::function<PGresult*()> func);
+
 
 // структура информации о сессии
 struct SessionInfo {
