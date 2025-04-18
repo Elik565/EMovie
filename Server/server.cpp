@@ -40,30 +40,12 @@ std::string generate_token() {
     return token;
 }
 
-
-EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
-    setup_routes();  // настраиваем маршруты
-}
-
-EMServer::~EMServer() {
-    // т.к. db будет автоматически уничтожен, то вызовется его деструктор
-}
-
-void EMServer::set_error(httplib::Response& response, const int status, const std::string& message) {
+void set_error(httplib::Response& response, const int status, const std::string& message) {
     response.status = status;
     response.set_content("{\"error\": \"" + message + "\"}", "application/json");
 }
 
-void EMServer::setup_routes() {
-    Queries q;
-
-    handle_get("/show_movie_list", q.show_movie_list);  // показать список фильмов
-    handle_post("/add_movie");  // добавить фильм
-    handle_post("/auth");  // авторизация клиента
-    handle_post("/logout");  // завершении сессии клиента
-}
-
-std::string EMServer::get_token_from_request(const httplib::Request& request, httplib::Response& response) {
+std::string get_token_from_request(const Request& request, Response& response) {
     std::string auth_header = request.get_header_value("Authorization");
 
     // если нет типа токена Bearer
@@ -73,6 +55,25 @@ std::string EMServer::get_token_from_request(const httplib::Request& request, ht
     }
 
     return auth_header.substr(7);  // "Bearer " — 7 символов
+}
+
+
+EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
+    setup_routes();  // настраиваем маршруты
+}
+
+EMServer::~EMServer() {
+    // т.к. db будет автоматически уничтожен, то вызовется его деструктор
+}
+
+void EMServer::setup_routes() {
+    Queries q;
+
+    handle_get("/movie_list", q.movie_list);  // показать список фильмов
+    handle_post("/reg");  // регистрация нового клиента
+    handle_post("/add_movie");  // добавить фильм
+    handle_post("/auth");  // авторизация клиента
+    handle_post("/logout");  // завершении сессии клиента
 }
 
 bool EMServer::is_authorized(const Request& request, Response& response) {
@@ -129,6 +130,31 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
         PQclear(sql_result);  // очищаем память после использования результата sql запроса
         response.set_content(json_res.dump(), "application/json");  // устанавливаем содержимое HTTP ответа в виде json
     });
+}
+
+PGresult* EMServer::handle_reg(const json& body, Response& response) {
+    // проверяем наличие всех необходимых полей
+    if (!body.contains("login") || !body.contains("password")) {
+        set_error(response, 400, "Ожидаются поля: login (text), password (text)!");
+        return nullptr;
+    }
+
+    try {
+        // получаем значения полей
+        std::string login = body["login"].get<std::string>();
+        std::string password = body["password"].get<std::string>();
+
+        // формируем запрос
+        std::string sql_query = "INSERT INTO users (username, password) VALUES (";
+        sql_query += "'" + login + "', ";
+        sql_query += "'" + password + "')";
+
+        return db.execute_query(sql_query);  // выполняем запрос
+    }
+    catch (const std::exception& exc) {
+        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных");
+        return nullptr;
+    }
 }
 
 PGresult* EMServer::handle_auth(const json& body, Response& response) {
@@ -213,14 +239,14 @@ void EMServer::handle_logout(const Request& request, Response& response) {
 
     sessions.erase(token);  // удаляем сессию
     response.status = 200;
-    response.set_content("{\"message\": \"Вы завершили сессию!\"}", "application/json");
+    response.set_content("{\"message\": \"Сессия завершена!\"}", "application/json");
 }
 
 void EMServer::handle_post(const std::string& route) {
     server.Post(route, [this, route](const Request& request, Response& response) {
         std::cout << "Получен POST-запрос с путем: " << route << std::endl;
 
-        if (request.path != "/auth") {
+        if (route != "/auth" && route != "/reg") {  // если не авторизация и не регистрация
             // проверка, авторизован ли клиент
             if (!is_authorized(request, response)) {
                 return;
@@ -231,7 +257,10 @@ void EMServer::handle_post(const std::string& route) {
             PGresult* sql_result = nullptr;
             auto body = request.body.empty() ? json{} : json::parse(request.body);
             
-            if (route == "/auth") {
+            if (route == "/reg") {
+                sql_result = handle_reg(body, response);
+            }
+            else if (route == "/auth") {
                 sql_result = handle_auth(body, response);
             }
             else if (route == "/add_movie") {

@@ -10,6 +10,12 @@ nlohmann::json pgresult_to_json(PGresult* res);
 // функция генерации токена
 std::string generate_token();
 
+// функция установки сообщения об ошибке
+void set_error(httplib::Response& response, const int status, const std::string& message);
+
+// функция получения токена из запроса
+std::string get_token_from_request(const httplib::Request& request, httplib::Response& response);
+
 
 // структура информации о сессии
 struct SessionInfo {
@@ -23,14 +29,8 @@ private:
     EMDatabase db;
     std::unordered_map<std::string, SessionInfo> sessions;  // хэш-таблица для быстрого доступа по ключу (токену)
 
-    // метод установки сообщения об ошибке
-    void set_error(httplib::Response& response, const int status, const std::string& message);
-
     // метод настройки маршрутов сервера
     void setup_routes();
-
-    // функция получения токена из запроса
-    std::string get_token_from_request(const httplib::Request& request, httplib::Response& response);
 
     // метод проверки авторизации пользователя
     bool is_authorized(const httplib::Request& request, httplib::Response& response);
@@ -40,6 +40,9 @@ private:
 
     // метод обработки GET-запроса
     void handle_get(const std::string& route, const std::string& sql_query);
+
+    // метод обработки запроса регистрации нового клиента
+    PGresult* handle_reg(const nlohmann::json& body, httplib::Response& response);
 
     // метод обработки запроса авторизации клиента
     PGresult* handle_auth(const nlohmann::json& body, httplib::Response& response);

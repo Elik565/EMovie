@@ -5,7 +5,7 @@
 
 // список запросов
 struct Queries {
-    std::string show_movie_list = "SELECT title, year FROM movies LIMIT 10";
+    std::string movie_list = "SELECT title, year FROM movies LIMIT 10";
 };
 
 class EMDatabase {
