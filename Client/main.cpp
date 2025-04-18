@@ -17,6 +17,7 @@ int main() {
     while(true) {
         std::cout << "\tМеню действий:\n";
         std::cout << "1 - Показать список фильмов;\n";
+        std::cout << "2 - Выйти из профиля;\n";
         std::cout << "exit - Выйти\n\n";
 
         std::cout << "Ввод: ";
