@@ -42,7 +42,7 @@ std::string generate_token() {
 
 
 EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
-    setup_routes();
+    setup_routes();  // настраиваем маршруты
 }
 
 EMServer::~EMServer() {
@@ -59,19 +59,30 @@ void EMServer::setup_routes() {
 
     handle_get("/show_movie_list", q.show_movie_list);  // показать список фильмов
     handle_post("/add_movie");  // добавить фильм
-    handle_post("/auth");  // аутентификация клиента
+    handle_post("/auth");  // авторизация клиента
+    handle_post("/logout");  // завершении сессии клиента
 }
 
-bool EMServer::is_authorized(const httplib::Request& request, httplib::Response& response){
+std::string EMServer::get_token_from_request(const httplib::Request& request, httplib::Response& response) {
     std::string auth_header = request.get_header_value("Authorization");
 
+    // если нет типа токена Bearer
     if (auth_header.substr(0, 7) != "Bearer ") {
-        set_error(response, 401, "Не передан токен!");
-        return false;
+        set_error(response, 400, "Некорректный заголовок авторизации (не передан токен)!");
+        return "";
     }
 
-    std::string token = auth_header.substr(7);  // "Bearer " — 7 символов
-    if (sessions.find(token) == sessions.end()) {
+    return auth_header.substr(7);  // "Bearer " — 7 символов
+}
+
+bool EMServer::is_authorized(const Request& request, Response& response) {
+    std::string token = get_token_from_request(request, response);
+
+    if (token == "") {
+        return false;  // уже отправили ответ
+    }
+    
+    if (sessions.find(token) == sessions.end()) {  // поиск токена в текущих сессиях
         set_error(response, 401, "Пользователь не авторизован!");
         return false;
     }
@@ -85,12 +96,14 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
     server.Get(route, [this, sql_query](const Request& request, Response& response) {
         std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
 
+        // проверка, авторизован ли клиент
         if (!is_authorized(request, response)) {
             return;
         }
 
         PGresult* sql_result = db.execute_query(sql_query);
 
+        // проверка на ошибки при выполнении sql-запроса
         if (PQresultStatus(sql_result) != PGRES_TUPLES_OK) {
             set_error(response, 500, db.get_sql_error());
             PQclear(sql_result);
@@ -103,31 +116,6 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
     });
 }
 
-PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
-    // проверяем наличие всех необходимых полей
-    if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
-        set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int)!");
-        return nullptr;
-    }
-
-    try {
-        // получаем значения полей
-        int id = body["id"].get<int>();
-        std::string title = body["title"].get<std::string>();
-        int year = body["year"].get<int>();
-
-        // формируем sql-запрос
-        std::string sql_query = "INSERT INTO movies (id, title, year) VALUES (" + std::to_string(id) + ", ";
-        sql_query += "'" + title + "', ";
-        sql_query += std::to_string(year) + ")";
-
-        return db.execute_query(sql_query);
-    }
-    catch (const std::exception& exc) {
-        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных.");
-        return nullptr;
-    }
-}
 
 PGresult* EMServer::handle_auth(const json& body, Response& response) {
     // проверяем наличие всех необходимых полей
@@ -175,23 +163,67 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
     }
 }
 
+PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
+    // проверяем наличие всех необходимых полей
+    if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
+        set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int)!");
+        return nullptr;
+    }
+
+    try {
+        // получаем значения полей
+        int id = body["id"].get<int>();
+        std::string title = body["title"].get<std::string>();
+        int year = body["year"].get<int>();
+
+        // формируем sql-запрос
+        std::string sql_query = "INSERT INTO movies (id, title, year) VALUES (" + std::to_string(id) + ", ";
+        sql_query += "'" + title + "', ";
+        sql_query += std::to_string(year) + ")";
+
+        return db.execute_query(sql_query);
+    }
+    catch (const std::exception& exc) {
+        set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных.");
+        return nullptr;
+    }
+}
+
+void EMServer::handle_logout(const Request& request, Response& response) {
+    std::string token = get_token_from_request(request, response);
+
+    if (token == "") {
+        return;  // уже отправили ответ
+    }
+
+    sessions.erase(token);  // удаляем сессию
+    response.status = 200;
+    response.set_content("{\"message\": \"Вы вышли из сессии!\"}", "application/json");
+}
+
 void EMServer::handle_post(const std::string& route) {
     server.Post(route, [this, route](const Request& request, Response& response) {
-        std::cout << "Получен POST-запрос с путем: " << request.path << std::endl;
+        std::cout << "Получен POST-запрос с путем: " << route << std::endl;
 
+        if (request.path != "/auth") {
+            // проверка, авторизован ли клиент
+            if (!is_authorized(request, response)) {
+                return;
+            }
+        }
+        
         try {
             auto body = json::parse(request.body);  // парсим json-тело запроса
             PGresult* sql_result = nullptr;
             
-            if (route == "/add_movie") {
-                sql_result = handle_add_movie(body, response);
-            }
-            else if (route == "/auth") {
+            if (route == "/auth") {
                 sql_result = handle_auth(body, response);
             }
-            else {
-                set_error(response, 404, "Маршрут не найден!");
-                return;
+            else if (route == "/add_movie") {
+                sql_result = handle_add_movie(body, response);
+            }
+            else if (route == "/logout") {
+                handle_logout(request, response);
             }
 
             if (!sql_result) {
