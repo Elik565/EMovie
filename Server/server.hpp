@@ -35,6 +35,9 @@ private:
     // метод проверки авторизации пользователя
     bool is_authorized(const httplib::Request& request, httplib::Response& response);
 
+    // метод проверки, является ли клиент администратором
+    bool is_admin(const httplib::Request& request, httplib::Response& response);
+
     // метод обработки GET-запроса
     void handle_get(const std::string& route, const std::string& sql_query);
 

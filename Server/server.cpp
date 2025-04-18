@@ -90,6 +90,21 @@ bool EMServer::is_authorized(const Request& request, Response& response) {
     return true;
 }
 
+bool EMServer::is_admin(const Request& request, Response& response) {
+    std::string token = get_token_from_request(request, response);
+
+    if (token == "") {
+        return false;  // уже отправили ответ
+    }
+
+    if (sessions[token].is_admin == true) {
+        return true;
+    }
+    
+    set_error(response, 401, "Пользователь не является администратором!");
+    return false;
+}
+
 void EMServer::handle_get(const std::string& route, const std::string& sql_query) {
     // лямбда захватывает поля текущего класса и sql-запрос
     // request и response - это параметры лямбды
@@ -115,7 +130,6 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
         response.set_content(json_res.dump(), "application/json");  // устанавливаем содержимое HTTP ответа в виде json
     });
 }
-
 
 PGresult* EMServer::handle_auth(const json& body, Response& response) {
     // проверяем наличие всех необходимых полей
@@ -143,19 +157,20 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
                 PQclear(sql_result);
                 return nullptr;
             }
+            else {  // если пользователь найден
+                std::string token = generate_token();
+                sessions[token].login = login;
+                sessions[token].is_admin = (PQgetvalue(sql_result, 0, 0)[0] == 't');
+
+                PQclear(sql_result);
+                json json_response = { {"message", "Успешная авторизация!"}, {"token", token}, {"is_admin", sessions[token].is_admin} };
+                response.set_content(json_response.dump(), "application/json");
+                response.status = 200;
+                return nullptr;
+            }
         }
 
-        // если пользователь найден
-        std::string token = generate_token();
-        sessions[token].login = login;
-        sessions[token].is_admin = (PQgetvalue(sql_result, 0, 0)[0] == 't');
-
-        PQclear(sql_result);
-        json json_response = { {"message", "Успешная авторизация!"}, {"token", token}, {"is_admin", sessions[token].is_admin} };
-        response.set_content(json_response.dump(), "application/json");
-        response.status = 200;
-
-        return nullptr;  // уже отправили ответ
+        return sql_result;
     }
     catch (const std::exception& exc) {
         set_error(response, 400, "Ошибка при формировании sql-запроса! Проверьте типы данных");
@@ -172,9 +187,9 @@ PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
 
     try {
         // получаем значения полей
-        int id = body["id"].get<int>();
+        int id = std::stoi(body["id"].get<std::string>());
         std::string title = body["title"].get<std::string>();
-        int year = body["year"].get<int>();
+        int year = std::stoi(body["year"].get<std::string>());
 
         // формируем sql-запрос
         std::string sql_query = "INSERT INTO movies (id, title, year) VALUES (" + std::to_string(id) + ", ";
@@ -198,7 +213,7 @@ void EMServer::handle_logout(const Request& request, Response& response) {
 
     sessions.erase(token);  // удаляем сессию
     response.status = 200;
-    response.set_content("{\"message\": \"Вы вышли из сессии!\"}", "application/json");
+    response.set_content("{\"message\": \"Вы завершили сессию!\"}", "application/json");
 }
 
 void EMServer::handle_post(const std::string& route) {
@@ -213,20 +228,24 @@ void EMServer::handle_post(const std::string& route) {
         }
         
         try {
-            auto body = json::parse(request.body);  // парсим json-тело запроса
             PGresult* sql_result = nullptr;
+            auto body = request.body.empty() ? json{} : json::parse(request.body);
             
             if (route == "/auth") {
                 sql_result = handle_auth(body, response);
             }
             else if (route == "/add_movie") {
+                if (!is_admin(request, response)) {
+                    return;
+                }
                 sql_result = handle_add_movie(body, response);
             }
             else if (route == "/logout") {
                 handle_logout(request, response);
             }
 
-            if (!sql_result) {
+            // если уже отправили ответ
+            if (!sql_result) {  
                 return;
             }
 
@@ -238,6 +257,7 @@ void EMServer::handle_post(const std::string& route) {
 
             PQclear(sql_result);
             response.status = 200;
+            response.set_content("{\"message\": \"Успешно!\"}", "application/json");
         }   
         catch (const std::exception& exc) {  // этот блок обрабатывает исключения
             // ошибка при парсинге json
