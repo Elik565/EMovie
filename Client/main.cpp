@@ -18,12 +18,10 @@ void sigint_handler(int sigint) {
 int main() {
     emclient_ptr = std::make_unique<EMClient>("localhost", 8080);  // создаем указатель на клиента
 
-    while (!emclient_ptr->authorization()) {  // пока не выполнится авторизация
-        emclient_ptr->enter_login_password();  // ввод логига и пароля (либо регистрация)
-    }
+    emclient_ptr->wait_authorization();  // ждем авторизации клиента
 
-    std::signal(SIGINT, sigint_handler);
-    
+    std::signal(SIGINT, sigint_handler);  // обработчки Ctrl+C
+
     std::string answer;
     while(true) {
         std::cout << "\tМеню действий:\n";
@@ -43,10 +41,12 @@ int main() {
         if (answer == "1") {
             emclient_ptr->show_movie_list();
         }
+        else if (answer == "2") {
+            emclient_ptr->exit_from_profile();
+        }
         else if (answer == "3" && emclient_ptr->is_admin) {
             emclient_ptr->add_movie();
         }
-
         if (answer == "exit") {
             break;
         }

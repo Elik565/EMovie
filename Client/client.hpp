@@ -31,17 +31,23 @@ public:
     // деструктор
     ~EMClient();
 
-    // метод ввода логина и пароля (или запрос на регистрацию)
-    void enter_login_password();
+    // метод ожидания авторизации клиента
+    void wait_authorization();
 
     // метод регистрации нового клиента
     void registration();
+
+    // метод ввода логина и пароля (или запрос на регистрацию)
+    void enter_login_password();
 
     // метод авторизации клиента
     bool authorization();
 
     // метод отображения списка фильмов
     void show_movie_list();
+
+    // метод выхода из профиля
+    void exit_from_profile();
 
     // метод добавления фильма
     void add_movie();

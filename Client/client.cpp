@@ -41,6 +41,12 @@ json EMClient::send_post(const std::string& route, const json& body) {
     return check_http_result(result);  // проверка ответа от сервера
 }
 
+void EMClient::wait_authorization() {
+    while (!authorization()) {  // пока не выполнится авторизация
+        enter_login_password();  // ввод логига и пароля (либо регистрация)
+    }
+}
+
 void EMClient::registration() {
     std::cout << "\n\tРегистрация:\n";
 
@@ -81,6 +87,7 @@ void EMClient::enter_login_password() {
         std::cin >> login;
         std::cout << "Введите пароль: ";
         std::cin >> password;
+        std::cout << "\n";
     }
     else if (answer == "n") {
         registration();
@@ -124,6 +131,12 @@ void EMClient::show_movie_list() {
         }
         std::cout << "\n";
     }
+}
+
+void EMClient::exit_from_profile() {
+    logout();  // завершаем сессию
+    login.clear();  // очищаем логин
+    wait_authorization();  // снова ждем авторизации
 }
 
 void EMClient::add_movie() {
