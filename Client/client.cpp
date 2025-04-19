@@ -18,6 +18,7 @@ json check_http_result(Result& result) {
 }
 
 EMClient::~EMClient() {
+    std::cout << "Завершение сессии...\n";
     logout();  // завершаем сессию
 }
 
@@ -40,6 +41,29 @@ json EMClient::send_post(const std::string& route, const json& body) {
     return check_http_result(result);  // проверка ответа от сервера
 }
 
+void EMClient::registration() {
+    std::cout << "\n\tРегистрация:\n";
+
+    std::string username;
+    std::string password;
+    std::cout << "Введите имя пользователя: ";
+    std::cin >> username;
+    std::cout << "Придумайте пароль: ";
+    std::cin >> password;
+
+    json body = { {"username", username}, {"password", password} };
+    json result = send_post("/reg", body);
+
+    if (result.empty()) {
+        return;
+    }
+
+    // если регистрация успешна
+    std::cout << "Регистрация успешна!\n\n";
+    login = username;
+    EMClient::password = password;
+ }
+
 void EMClient::enter_login_password() {
     std::string answer;
     bool correct_answer = false;
@@ -59,12 +83,15 @@ void EMClient::enter_login_password() {
         std::cin >> password;
     }
     else if (answer == "n") {
-
-        //registration();
+        registration();
     }
 }
 
 bool EMClient::authorization() {
+    if (login.empty()) {
+        return false;
+    }
+
     json body = { {"login", login}, {"password", password} };
     json result = send_post("/auth", body);
 
@@ -82,7 +109,7 @@ bool EMClient::authorization() {
 }
 
 void EMClient::show_movie_list() {
-    json movies = send_get("/show_movie_list");
+    json movies = send_get("/movie_list");
 
     if (!movies.empty()) {
         std::cout << "\tСписок фильмов:\n";

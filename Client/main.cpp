@@ -5,9 +5,7 @@
 using namespace httplib;
 
 int main() {
-    EMClient emclient ("localhost", 8080);  // создаем клиента
-
-    emclient.enter_login_password();
+    EMClient emclient("localhost", 8080);  // создаем клиента
 
     while (!emclient.authorization()) {  // пока не выполнится авторизация
         emclient.enter_login_password();  // ввод логига и пароля (либо регистрация)

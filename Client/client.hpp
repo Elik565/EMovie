@@ -34,6 +34,9 @@ public:
     // метод ввода логина и пароля (или запрос на регистрацию)
     void enter_login_password();
 
+    // метод регистрации нового клиента
+    void registration();
+
     // метод авторизации клиента
     bool authorization();
 
