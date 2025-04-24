@@ -3,7 +3,7 @@
 using json = nlohmann::json;
 using namespace httplib;
 
-json BaseClient::check_http_result(Result& result) {
+json check_http_result(Result& result) {
     if (result) {
         if (result->status == 200) {
             return json::parse(result->body);
@@ -16,9 +16,11 @@ json BaseClient::check_http_result(Result& result) {
     return {};
 }
 
+
 json BaseClient::send_get(const std::string& route) {
-    auto result = client.Get(route, headers);
-    return check_http_result(result);
+    auto result = client.Get(route, headers);  // отправляем GET-запрос
+
+    return check_http_result(result);  // проверка ответа от сервера
 }
 
 json BaseClient::send_post(const std::string& route, const json& body) {
@@ -26,5 +28,5 @@ json BaseClient::send_post(const std::string& route, const json& body) {
         ? client.Post(route, headers)
         : client.Post(route, headers, body.dump(), "application/json");
 
-    return check_http_result(result);
+    return check_http_result(result);  // проверка ответа от сервера
 }
