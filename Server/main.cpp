@@ -5,7 +5,7 @@
 std::unique_ptr<EMServer> emserver_ptr;  // глобальный указатель на сервер
 
 void sigint_handler(int sigint) {
-    std::cout << "\nПолучен сигнал о завершении работы сервера\n";
+    std::cout << "\nПолучен сигнал о завершении работы сервера.\n";
     if (emserver_ptr) {
         emserver_ptr->stop();
         std::cout << "Работа сервера завершена.\n";
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 
     signal(SIGINT, sigint_handler);  // устанавливаем обработчик сигнала ctrl+c
 
-    emserver_ptr = std::make_unique<EMServer>(conn_info);
+    emserver_ptr = std::make_unique<EMServer>(conn_info);  // создаем указатель
 
     emserver_ptr->start();
 

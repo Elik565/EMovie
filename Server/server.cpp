@@ -50,7 +50,7 @@ std::string get_token_from_request(const Request& request, Response& response) {
 
     // если нет типа токена Bearer
     if (auth_header.substr(0, 7) != "Bearer ") {
-        set_error(response, 400, "Некорректный заголовок авторизации (не передан токен)!");
+        set_error(response, 400, "Некорректный заголовок проверки авторизации (не передан токен)!");
         return "";
     }
 
@@ -58,6 +58,7 @@ std::string get_token_from_request(const Request& request, Response& response) {
 }
 
 PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
+    // принимает на вход функцию, которая возвращает PGresult*
     try {
         return func();
     } catch (...) {
@@ -143,19 +144,20 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
 
 PGresult* EMServer::handle_reg(const json& body, Response& response) {
     // проверяем наличие всех необходимых полей
-    if (!body.contains("login") || !body.contains("password")) {
-        set_error(response, 400, "Ожидаются поля: login (text), password (text)!");
+    if (!body.contains("username") || !body.contains("password")) {
+        set_error(response, 400, "Ожидаются поля: username (text), password (text)!");
         return nullptr;
     }
 
     return safe_sql_query(response, [&] {
+        // лямбда захватывает все по ссылке
         // получаем значения полей
-        std::string login = body["login"].get<std::string>();
+        std::string username = body["username"].get<std::string>();
         std::string password = body["password"].get<std::string>();
 
         // формируем запрос
         std::string sql_query = "INSERT INTO users (username, password) VALUES (";
-        sql_query += "'" + login + "', ";
+        sql_query += "'" + username + "', ";
         sql_query += "'" + password + "')";
 
         return db.execute_query(sql_query);  // выполняем запрос
