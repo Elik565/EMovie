@@ -79,7 +79,7 @@ EMServer::~EMServer() {
 void EMServer::setup_routes() {
     Queries q;
 
-    handle_get("/movie_list", q.movie_list);  // показать список фильмов
+    handle_get("/movie_list");  // показать список фильмов
     handle_post("/reg");  // регистрация нового клиента
     handle_post("/add_movie");  // добавить фильм
     handle_post("/auth");  // авторизация клиента
@@ -116,10 +116,19 @@ bool EMServer::is_admin(const Request& request, Response& response) {
     return false;
 }
 
-void EMServer::handle_get(const std::string& route, const std::string& sql_query) {
+PGresult* EMServer::handle_movie_list(const httplib::Request& request, httplib::Response& response) {
+    Queries q;
+    return db.execute_query(q.movie_list);
+}
+
+void EMServer::handle_watch(const httplib::Request& request, httplib::Response& response) {
+
+}
+
+void EMServer::handle_get(const std::string& route) {
     // лямбда захватывает поля текущего класса и sql-запрос
     // request и response - это параметры лямбды
-    server.Get(route, [this, sql_query](const Request& request, Response& response) {
+    server.Get(route, [this, route](const Request& request, Response& response) {
         std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
 
         // проверка, авторизован ли клиент
@@ -127,7 +136,14 @@ void EMServer::handle_get(const std::string& route, const std::string& sql_query
             return;
         }
 
-        PGresult* sql_result = db.execute_query(sql_query);
+        PGresult* sql_result = nullptr;
+
+        if (route == "/movie_list") {
+            sql_result = handle_movie_list(request, response);
+        }
+        else if (route == "/watch") {
+            handle_watch(request, response);
+        }
 
         // проверка на ошибки при выполнении sql-запроса
         if (PQresultStatus(sql_result) != PGRES_TUPLES_OK) {

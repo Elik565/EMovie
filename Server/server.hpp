@@ -41,8 +41,14 @@ private:
     // метод проверки, является ли клиент администратором
     bool is_admin(const httplib::Request& request, httplib::Response& response);
 
+    // метод обработки запроса отображения списка фильмов
+    PGresult* handle_movie_list(const httplib::Request& request, httplib::Response& response);
+
+    // метод обработки запроса просмтора фильма
+    void handle_watch(const httplib::Request& request, httplib::Response& response);
+
     // метод обработки GET-запроса
-    void handle_get(const std::string& route, const std::string& sql_query);
+    void handle_get(const std::string& route);
 
     // метод обработки запроса регистрации нового клиента
     PGresult* handle_reg(const nlohmann::json& body, httplib::Response& response);
