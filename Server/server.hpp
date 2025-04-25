@@ -19,6 +19,12 @@ std::string get_token_from_request(const httplib::Request& request, httplib::Res
 // функция обработки исключений при формировании sql-запроса
 PGresult* safe_sql_query(httplib::Response& response, std::function<PGresult*()> func);
 
+// функция получения диапазона из заголовка Range
+std::pair<std::streamsize, std::streamsize> get_range(const httplib::Request& request, httplib::Response& response);
+
+// функция отправки части фильма
+void send_movie_part(const std::string& filepath, const std::pair<std::streamsize, std::streamsize>& range, httplib::Response& response);
+
 
 // структура информации о сессии
 struct SessionInfo {
@@ -43,6 +49,9 @@ private:
 
     // метод обработки запроса отображения списка фильмов
     PGresult* handle_movie_list(const httplib::Request& request, httplib::Response& response);
+
+    // метод получения пути к файлу с фильмом
+    std::string get_movie_filepath(const std::string& title, httplib::Response& response);
 
     // метод обработки запроса просмтора фильма
     void handle_watch(const httplib::Request& request, httplib::Response& response);
