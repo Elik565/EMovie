@@ -36,9 +36,12 @@ public:
     // метод отображения списка фильмов
     void show_movie_list();
 
-    // метод добавления фильма
-    void add_movie();
+    // метод просмотра фильма
+    void watch_movie();
 
     // метод выхода из профиля
     void exit_from_profile();
+
+    // метод добавления фильма
+    void add_movie();
 };

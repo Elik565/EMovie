@@ -22,33 +22,45 @@ int main() {
     std::signal(SIGINT, sigint_handler);  // обработчки Ctrl+C
 
     std::string answer;
-    while(true) {
+    while(answer != "exit") {
         std::cout << "\tМеню действий:\n";
         std::cout << "1 - Показать список фильмов;\n";
-        std::cout << "2 - Выйти из профиля;\n";
+        std::cout << "2 - Начать просмотр фильма;\n";
+        std::cout << "3 - Выйти из профиля;\n";
 
         // действия для администратора
         if (emclient_ptr->is_admin) {
-            std::cout << "3 - Добавить фильм;\n";
+            std::cout << "4 - Добавить фильм;\n";
         }
 
         std::cout << "exit - Выйти\n\n";
 
-        std::cout << "Ввод: ";
-        std::cin >> answer;
+        bool correct_answer = false;
+        while (!correct_answer) {
+            std::cout << "Ввод: ";
+            std::cin >> answer;
 
-        if (answer == "1") {
-            emclient_ptr->show_movie_list();
-        }
-        else if (answer == "2") {
-            emclient_ptr->exit_from_profile();
-        }
-        else if (answer == "3" && emclient_ptr->is_admin) {
-            emclient_ptr->add_movie();
-        }
-        if (answer == "exit") {
-            emclient_ptr.reset();  // вызываем деструктор
-            break;
+            correct_answer = true;
+
+            if (answer == "1") {
+                emclient_ptr->show_movie_list();
+            }
+            else if (answer == "2") {
+                emclient_ptr->watch_movie();
+            }
+            else if (answer == "3") {
+                emclient_ptr->exit_from_profile();
+            }
+            else if (answer == "4" && emclient_ptr->is_admin) {
+                emclient_ptr->add_movie();
+            }
+            else if (answer == "exit") {
+                emclient_ptr.reset();  // вызываем деструктор
+                break;
+            }
+            else {
+                correct_answer = false;
+            }
         }
     }
 

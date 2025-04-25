@@ -1,7 +1,16 @@
 #include "em_client.hpp"
 #include <iostream>
+#include <pthread.h>
 
 using json = nlohmann::json;
+
+void replace_spaces(std::string& title) {
+    size_t pos = 0;
+    while ((pos = title.find(' ', pos)) != std::string::npos) {
+        title.replace(pos, 1, "%20");
+        pos += 3; // Двигаемся на длину "%20"
+    }
+}
 
 void EMClient::registration() {
     std::cout << "\n\tРегистрация:\n";
@@ -92,6 +101,31 @@ void EMClient::show_movie_list() {
     }
 }
 
+void play_movie(const std::string& token, const std::string& title) {
+    std::string encoded_title = title;
+    replace_spaces(encoded_title);
+    
+    std::string url = "http://localhost:8080/watch?title=\"" + encoded_title + "\"";
+    std::string command = "vlc " + url + " --http-referrer=\"Bearer " + token + "\"";
+    std::system(command.c_str()); // запускаем команду
+}
+
+void EMClient::watch_movie() {
+    std::string title;
+    std::cin.ignore();
+    std::cout << "Введите название фильма: ";
+    std::getline(std::cin, title);
+
+    std::thread movie_thread(play_movie, token, title);
+    movie_thread.join();  
+}
+
+void EMClient::exit_from_profile() {
+    logout();  // завершаем сессию
+    login.clear();  // очищаем логин
+    wait_authorization();  // снова ждем авторизации
+}
+
 void EMClient::add_movie() {
     // все делаем строками, т.к. на сервере есть обработка неверных типов данных
     std::string id, title, year;
@@ -111,10 +145,4 @@ void EMClient::add_movie() {
     if (!result.empty()) {
         std::cout << result["message"] << "\n";
     }
-}
-
-void EMClient::exit_from_profile() {
-    logout();  // завершаем сессию
-    login.clear();  // очищаем логин
-    wait_authorization();  // снова ждем авторизации
 }
