@@ -98,13 +98,13 @@ void send_movie_part(const std::string& filepath, const std::pair<std::streamsiz
         return;
     }
 
-    std::streamsize file_size = fin.tellg();  // узнаем размер всего файла
+    std::streamsize file_size = fin.tellg();
 
     std::streamsize start = range.first;
-    std::streamsize end = range.second == -1 ? file_size - 1 : range.second;
+    std::streamsize end = (range.second == -1 || range.second >= file_size) ? file_size - 1 : range.second;
     std::streamsize content_length = end - start + 1;
 
-    if (start >= file_size || end >= file_size) {
+    if (start >= file_size || start > end) {
         response.status = 416;
         response.set_header("Content-Range", "bytes */" + std::to_string(file_size));
         return;
@@ -114,14 +114,10 @@ void send_movie_part(const std::string& filepath, const std::pair<std::streamsiz
     std::vector<char> buffer(content_length);
     fin.read(buffer.data(), content_length);
 
-    // устанавливаем нужные заголовки для ответа
+    response.status = 200;
     response.set_header("Content-Type", "video/mp4");
-    response.set_header("Accept-Ranges", "bytes");
-    response.set_header("Content-Range", "bytes " + std::to_string(start) + "-" + std::to_string(end) + "/" + std::to_string(file_size));
     response.set_header("Content-Length", std::to_string(content_length));
-
     response.body = std::string(buffer.begin(), buffer.end());
-    response.status = 206;  // частичный ответ
 
     fin.close();
 }
