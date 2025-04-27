@@ -80,7 +80,7 @@ void send_hls_playlist(const std::string& filepath, httplib::Response& response)
     }
 
     std::stringstream playlist_stream;
-    playlist_stream << fin.rdbuf();
+    playlist_stream << fin.rdbuf();  // записываем буфер данных из потока файла в строковый поток
     fin.close();
 
     response.status = 200;
@@ -136,7 +136,7 @@ bool EMServer::is_admin(const Request& request, Response& response) {
 }
 
 PGresult* EMServer::handle_movie_list(const Request& request, Response& response) {
-    Queries q;
+    Queries q;  // список sql-запросов
     return db.execute_query(q.movie_list);
 }
 
@@ -158,7 +158,7 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
         return "";
     }
 
-    std::string filename = PQgetvalue(sql_result, 0, 0);
+    std::string filename = PQgetvalue(sql_result, 0, 0);  // достаем значение из sql-результата 
     PQclear(sql_result);
 
     return "../Movies/" + filename;
@@ -171,25 +171,43 @@ void EMServer::handle_watch(const Request& request, Response& response) {
         return;
     }
 
-    std::string playlist_filepath = get_playlist_filepath(title, response);  // получаем путь к файлу с фильмом
+    std::string playlist_filepath = get_playlist_filepath(title, response);  // получаем путь к hls плейлисту фильма
     if (playlist_filepath == "") {
         return;  // уже отправили ответ
     }
 
-    send_hls_playlist(playlist_filepath, response);
+    send_hls_playlist(playlist_filepath, response);  // отправляем плейлист клиенту
 }
 
 void EMServer::handle_segment(const Request& request, httplib::Response& response) {
-    std::string segment_filepath = "/Movies/";
+    // формируем путь до нужного сегмента
+    std::string segment_filepath = "../Movies" + request.path.substr(0, request.path.rfind("_"));
+    segment_filepath += request.path;
+    
+    // открываем сегмент в бинарном виде
+    std::ifstream fin(segment_filepath, std::ios::binary);
+    if (!fin) {
+        set_error(response, 404, "Файл сегмента не найден!");
+        return;
+    }
+
+    // читаем данные в строковый поток
+    std::stringstream segment_stream;
+    segment_stream << fin.rdbuf();
+    fin.close();
+
+    response.status = 200;
+    response.set_header("Content-Type", "video/MP2T");
+    response.body = segment_stream.str();
 }
 
 void EMServer::handle_get(const Request& request, httplib::Response& response) {
     std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
 
     // проверка, авторизован ли клиент
-    // if (!is_authorized(request, response)) {
-    //     return;
-    // }
+    if (!is_authorized(request, response)) {
+        return;
+    }
 
     PGresult* sql_result = nullptr;
 
@@ -200,8 +218,13 @@ void EMServer::handle_get(const Request& request, httplib::Response& response) {
         handle_watch(request, response);
         return;
     } 
-    else if (request.path == "/watch/([\\w-]+)\\.ts") {
+    else if (request.path.rfind(".ts") == request.path.length() - 3) {
         handle_segment(request, response);
+        return;
+    }
+    else {
+        set_error(response, 404, "Маршрут не найден!");
+        return;
     }
 
     // проверка на ошибки при выполнении sql-запроса
@@ -265,9 +288,9 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
                 return nullptr;
             }
             else {  // если пользователь найден
-                std::string token = generate_token();
-                sessions[token].login = login;
-                sessions[token].is_admin = (PQgetvalue(sql_result, 0, 0)[0] == 't');
+                std::string token = generate_token();  // генерируем новый токен
+                sessions[token].login = login;  // добавляем в пару к токену логин
+                sessions[token].is_admin = (PQgetvalue(sql_result, 0, 0)[0] == 't');  // флаг администратора - туда же
 
                 PQclear(sql_result);
                 json json_response = { {"message", "Успешная авторизация!"}, {"token", token}, {"is_admin", sessions[token].is_admin} };
