@@ -128,7 +128,7 @@ void EMClient::exit_from_profile() {
 
 void EMClient::add_movie() {
     // все делаем строками, т.к. на сервере есть обработка неверных типов данных
-    std::string id, title, year;
+    std::string id, title, year, filepath;
 
     std::cout << "Введите id: ";
     std::cin >> id;
@@ -137,9 +137,11 @@ void EMClient::add_movie() {
     std::getline(std::cin, title);
     std::cout << "Введите год: ";
     std::cin >> year;
+    std::cout << "Введите путь до HLS-плейлиста (Movies/ + ваш путь): ";
+    std::cin >> filepath;
 
     // формируем тело нового фильма
-    json body = { {"id", id}, {"title", title}, {"year", year} };
+    json body = { {"id", id}, {"title", title}, {"year", year} , {"filepath", filepath} };
     auto result = send_post("/add_movie", body);
 
     if (!result.empty()) {
