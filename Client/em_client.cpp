@@ -103,11 +103,11 @@ void EMClient::show_movie_list() {
 
 void play_movie(const std::string& token, const std::string& title) {
     std::string encoded_title = title;
-    replace_spaces(encoded_title);
+    replace_spaces(encoded_title);  // кодируем название фильма для url (убираем пробелы)
     
     std::string url = "http://localhost:8080/watch?title=\"" + encoded_title + "\"";
     std::string command = "vlc " + url + " --http-referrer=\"Bearer " + token + "\"";
-    std::system(command.c_str()); // запускаем команду
+    std::system(command.c_str());  // запускаем команду
 }
 
 void EMClient::watch_movie() {
@@ -116,8 +116,8 @@ void EMClient::watch_movie() {
     std::cout << "Введите название фильма: ";
     std::getline(std::cin, title);
 
-    std::thread movie_thread(play_movie, token, title);
-    movie_thread.join();  
+    std::thread movie_thread(play_movie, token, title);  // запускаем плеер в новом потоке
+    movie_thread.join();  // ждем завершения работы потока
 }
 
 void EMClient::exit_from_profile() {
