@@ -90,20 +90,19 @@ void send_hls_playlist(const std::string& filepath, httplib::Response& response)
 
 
 EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
-    setup_routes();  // настраиваем маршруты
+    // лямбда захватывает поля текущего класса и sql-запрос
+    // request и response - это параметры лямбды
+    server.Get(R"(/.*)", [this](const Request& request, Response& response) {
+        handle_get(request, response);
+    });
+
+    server.Post(R"(/.*)", [this](const Request& request, Response& response) {
+        handle_post(request, response);
+    });
 }
 
 EMServer::~EMServer() {
     // т.к. db будет автоматически уничтожен, то вызовется его деструктор
-}
-
-void EMServer::setup_routes() {
-    handle_get("/movie_list");  // показать список фильмов
-    handle_get("/watch");  // просмотр фильма
-    handle_post("/reg");  // регистрация нового клиента
-    handle_post("/add_movie");  // добавить фильм
-    handle_post("/auth");  // авторизация клиента
-    handle_post("/logout");  // завершении сессии клиента
 }
 
 bool EMServer::is_authorized(const Request& request, Response& response) {
@@ -180,45 +179,41 @@ void EMServer::handle_watch(const Request& request, Response& response) {
     send_hls_playlist(playlist_filepath, response);
 }
 
-void EMServer::handle_segment(const httplib::Request& request, httplib::Response& response) {
+void EMServer::handle_segment(const Request& request, httplib::Response& response) {
     std::string segment_filepath = "/Movies/";
 }
 
-void EMServer::handle_get(const std::string& route) {
-    // лямбда захватывает поля текущего класса и sql-запрос
-    // request и response - это параметры лямбды
-    server.Get(route, [this, route](const Request& request, Response& response) {
-        std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
+void EMServer::handle_get(const Request& request, httplib::Response& response) {
+    std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
 
-        // проверка, авторизован ли клиент
-        // if (!is_authorized(request, response)) {
-        //     return;
-        // }
+    // проверка, авторизован ли клиент
+    // if (!is_authorized(request, response)) {
+    //     return;
+    // }
 
-        PGresult* sql_result = nullptr;
+    PGresult* sql_result = nullptr;
 
-        if (route == "/movie_list") {
-            sql_result = handle_movie_list(request, response);
-        }
-        else if (route == "/watch") {
-            handle_watch(request, response);
-            return;
-        } 
-        else if (route == "/watch/([\\w-]+)\\.ts") {
-            handle_segment(request, response);
-        }
+    if (request.path == "/movie_list") {
+        sql_result = handle_movie_list(request, response);
+    }
+    else if (request.path == "/watch") {
+        handle_watch(request, response);
+        return;
+    } 
+    else if (request.path == "/watch/([\\w-]+)\\.ts") {
+        handle_segment(request, response);
+    }
 
-        // проверка на ошибки при выполнении sql-запроса
-        if (PQresultStatus(sql_result) != PGRES_TUPLES_OK) {
-            set_error(response, 500, db.get_sql_error());
-            PQclear(sql_result);
-            return;
-        }
+    // проверка на ошибки при выполнении sql-запроса
+    if (PQresultStatus(sql_result) != PGRES_TUPLES_OK) {
+        set_error(response, 500, db.get_sql_error());
+        PQclear(sql_result);
+        return;
+    }
 
-        json json_res = pgresult_to_json(sql_result);  // преобразуем результат в json
-        PQclear(sql_result);  // очищаем память после использования результата sql запроса
-        response.set_content(json_res.dump(), "application/json");  // устанавливаем содержимое HTTP ответа в виде json
-    });
+    json json_res = pgresult_to_json(sql_result);  // преобразуем результат в json
+    PQclear(sql_result);  // очищаем память после использования результата sql запроса
+    response.set_content(json_res.dump(), "application/json");  // устанавливаем содержимое HTTP ответа в виде json
 }
 
 PGresult* EMServer::handle_reg(const json& body, Response& response) {
@@ -320,57 +315,55 @@ void EMServer::handle_logout(const Request& request, Response& response) {
     response.set_content("{\"message\": \"Сессия завершена!\"}", "application/json");
 }
 
-void EMServer::handle_post(const std::string& route) {
-    server.Post(route, [this, route](const Request& request, Response& response) {
-        std::cout << "Получен POST-запрос с путем: " << route << std::endl;
+void EMServer::handle_post(const Request& request, httplib::Response& response) {
+    std::cout << "Получен POST-запрос с путем: " << request.path << std::endl;
 
-        if (route != "/auth" && route != "/reg") {  // если не авторизация и не регистрация
-            // проверка, авторизован ли клиент
-            if (!is_authorized(request, response)) {
-                return;
-            }
+    if (request.path != "/auth" && request.path != "/reg") {  // если не авторизация и не регистрация
+        // проверка, авторизован ли клиент
+        if (!is_authorized(request, response)) {
+            return;
         }
+    }
+    
+    try {
+        PGresult* sql_result = nullptr;
+        auto body = request.body.empty() ? json{} : json::parse(request.body);
         
-        try {
-            PGresult* sql_result = nullptr;
-            auto body = request.body.empty() ? json{} : json::parse(request.body);
-            
-            if (route == "/reg") {
-                sql_result = handle_reg(body, response);
-            }
-            else if (route == "/auth") {
-                sql_result = handle_auth(body, response);
-            }
-            else if (route == "/add_movie") {
-                if (!is_admin(request, response)) {
-                    return;
-                }
-                sql_result = handle_add_movie(body, response);
-            }
-            else if (route == "/logout") {
-                handle_logout(request, response);
-            }
-
-            // если уже отправили ответ
-            if (!sql_result) {  
-                return;
-            }
-
-            if (PQresultStatus(sql_result) != PGRES_COMMAND_OK) {
-                set_error(response, 500, db.get_sql_error());
-                PQclear(sql_result);
-                return;
-            }
-
-            PQclear(sql_result);
-            response.status = 200;
-            response.set_content("{\"message\": \"Успешно!\"}", "application/json");
-        }   
-        catch (const std::exception& exc) {  // этот блок обрабатывает исключения
-            // ошибка при парсинге json
-            set_error(response, 400, "Некорректный JSON!");
+        if (request.path == "/reg") {
+            sql_result = handle_reg(body, response);
         }
-    });
+        else if (request.path == "/auth") {
+            sql_result = handle_auth(body, response);
+        }
+        else if (request.path == "/add_movie") {
+            if (!is_admin(request, response)) {
+                return;
+            }
+            sql_result = handle_add_movie(body, response);
+        }
+        else if (request.path == "/logout") {
+            handle_logout(request, response);
+        }
+
+        // если уже отправили ответ
+        if (!sql_result) {  
+            return;
+        }
+
+        if (PQresultStatus(sql_result) != PGRES_COMMAND_OK) {
+            set_error(response, 500, db.get_sql_error());
+            PQclear(sql_result);
+            return;
+        }
+
+        PQclear(sql_result);
+        response.status = 200;
+        response.set_content("{\"message\": \"Успешно!\"}", "application/json");
+    }   
+    catch (const std::exception& exc) {  // этот блок обрабатывает исключения
+        // ошибка при парсинге json
+        set_error(response, 400, "Некорректный JSON!");
+    }
 }
 
 

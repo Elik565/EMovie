@@ -34,9 +34,6 @@ private:
     EMDatabase db;
     std::unordered_map<std::string, SessionInfo> sessions;  // хэш-таблица для быстрого доступа по ключу (токену)
 
-    // метод настройки маршрутов сервера
-    void setup_routes();
-
     // метод проверки авторизации пользователя
     bool is_authorized(const httplib::Request& request, httplib::Response& response);
 
@@ -56,7 +53,7 @@ private:
     void handle_segment(const httplib::Request& request, httplib::Response& response);
 
     // метод обработки GET-запроса
-    void handle_get(const std::string& route);
+    void handle_get(const httplib::Request& request, httplib::Response& response);
 
     // метод обработки запроса регистрации нового клиента
     PGresult* handle_reg(const nlohmann::json& body, httplib::Response& response);
@@ -71,7 +68,7 @@ private:
     void handle_logout(const httplib::Request& request, httplib::Response& response);
 
     // метод обработки POST-запроса
-    void handle_post(const std::string& route);
+    void handle_post(const httplib::Request& request, httplib::Response& response);
 
 public:
     // конструктор
