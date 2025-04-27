@@ -72,54 +72,20 @@ PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
     }
 }
 
-std::pair<std::streamsize, std::streamsize> get_range(const Request& request, Response& response) {
-    std::streamsize start = 0;  // начало диапазона
-    std::streamsize end = -1;  // по умолчанию - до конца файла
-
-    // проверяем, что в запросе присутствует Range
-    std::string range_header = request.get_header_value("Range");
-    if (range_header.empty() || range_header.substr(0, 6) != "bytes=") {
-        set_error(response, 400, "Неверный формат заголовка Range");
-        return {-1, -1};
-    }
-
-    std::cout << range_header << "\n";
-
-    // получаем диапазон из заголовка
-    sscanf(range_header.c_str(), "bytes=%zu-%zu", &start, &end);
-
-    return {start, end};
-}
-
-void send_movie_part(const std::string& filepath, const std::pair<std::streamsize, std::streamsize>& range, Response& response) {
-    std::ifstream fin(filepath, std::ios::binary | std::ios::ate);  // открываем файл для чтения в бинарном режиме и ставим указатель чтения в конец 
+void send_hls_playlist(const std::string& filepath, httplib::Response& response) {
+    std::ifstream fin(filepath);
     if (!fin) {
-        set_error(response, 404, "Файл фильма не найден!");
+        set_error(response, 404, "Плейлист HLS не найден!");
         return;
     }
 
-    std::streamsize file_size = fin.tellg();
-
-    std::streamsize start = range.first;
-    std::streamsize end = (range.second == -1 || range.second >= file_size) ? file_size - 1 : range.second;
-    std::streamsize content_length = end - start + 1;
-
-    if (start >= file_size || start > end) {
-        response.status = 416;
-        response.set_header("Content-Range", "bytes */" + std::to_string(file_size));
-        return;
-    }
-
-    fin.seekg(start);
-    std::vector<char> buffer(content_length);
-    fin.read(buffer.data(), content_length);
+    std::stringstream playlist_stream;
+    playlist_stream << fin.rdbuf();
+    fin.close();
 
     response.status = 200;
-    response.set_header("Content-Type", "video/mp4");
-    response.set_header("Content-Length", std::to_string(content_length));
-    response.body = std::string(buffer.begin(), buffer.end());
-
-    fin.close();
+    response.set_header("Content-Type", "application/vnd.apple.mpegurl");
+    response.body = playlist_stream.str();
 }
 
 
@@ -132,8 +98,6 @@ EMServer::~EMServer() {
 }
 
 void EMServer::setup_routes() {
-    Queries q;
-
     handle_get("/movie_list");  // показать список фильмов
     handle_get("/watch");  // просмотр фильма
     handle_post("/reg");  // регистрация нового клиента
@@ -177,7 +141,7 @@ PGresult* EMServer::handle_movie_list(const Request& request, Response& response
     return db.execute_query(q.movie_list);
 }
 
-std::string EMServer::get_movie_filepath(const std::string& title, Response& response) {
+std::string EMServer::get_playlist_filepath(const std::string& title, Response& response) {
     std::string sql_query = "SELECT filepath FROM movies WHERE title LIKE '%" + title + "%'";
     PGresult* sql_result = db.execute_query(sql_query);  // выполняем sql-запрос
 
@@ -208,17 +172,16 @@ void EMServer::handle_watch(const Request& request, Response& response) {
         return;
     }
 
-    std::string movie_filepath = get_movie_filepath(title, response);  // получаем путь к файлу с фильмом
-    if (movie_filepath == "") {
+    std::string playlist_filepath = get_playlist_filepath(title, response);  // получаем путь к файлу с фильмом
+    if (playlist_filepath == "") {
         return;  // уже отправили ответ
     }
 
-    std::pair<std::streamsize, std::streamsize> range = get_range(request, response);  // получаем диапазон для стрима
-    if (range.first == -1) {
-        return;
-    }
+    send_hls_playlist(playlist_filepath, response);
+}
 
-    send_movie_part(movie_filepath, range, response);  // отправляем часть файла с фильмом
+void EMServer::handle_segment(const httplib::Request& request, httplib::Response& response) {
+    std::string segment_filepath = "/Movies/";
 }
 
 void EMServer::handle_get(const std::string& route) {
@@ -228,9 +191,9 @@ void EMServer::handle_get(const std::string& route) {
         std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
 
         // проверка, авторизован ли клиент
-        if (!is_authorized(request, response)) {
-            return;
-        }
+        // if (!is_authorized(request, response)) {
+        //     return;
+        // }
 
         PGresult* sql_result = nullptr;
 
@@ -240,6 +203,9 @@ void EMServer::handle_get(const std::string& route) {
         else if (route == "/watch") {
             handle_watch(request, response);
             return;
+        } 
+        else if (route == "/watch/([\\w-]+)\\.ts") {
+            handle_segment(request, response);
         }
 
         // проверка на ошибки при выполнении sql-запроса
@@ -406,6 +372,7 @@ void EMServer::handle_post(const std::string& route) {
         }
     });
 }
+
 
 void EMServer::start() {
     std::cout << "Сервер запущен на http://localhost:8080\n";
