@@ -306,8 +306,8 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
 
 PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
     // проверяем наличие всех необходимых полей
-    if (!body.contains("id") || !body.contains("title") || !body.contains("year")) {
-        set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int)!");
+    if (!body.contains("id") || !body.contains("title") || !body.contains("year") || !body.contains("filepath")) {
+        set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int), filepath (text)!");
         return nullptr;
     }
 
@@ -316,11 +316,13 @@ PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
         int id = std::stoi(body["id"].get<std::string>());
         std::string title = body["title"].get<std::string>();
         int year = std::stoi(body["year"].get<std::string>());
+        std::string filepath = body["filepath"].get<std::string>();
 
         // формируем sql-запрос
-        std::string sql_query = "INSERT INTO movies (id, title, year) VALUES (" + std::to_string(id) + ", ";
+        std::string sql_query = "INSERT INTO movies (id, title, year, filepath) VALUES (" + std::to_string(id) + ", ";
         sql_query += "'" + title + "', ";
-        sql_query += std::to_string(year) + ")";
+        sql_query += std::to_string(year) + ", ";
+        sql_query += "'" + filepath + "')";
 
         return db.execute_query(sql_query);
     });
