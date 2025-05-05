@@ -9,4 +9,6 @@ Client/.vscode/tasks.json
 Server/.vscode/settings.json
 Movies/москва_слезам_не_верит
 Movies/операция_ы
+Server/server
+Client/client
 
