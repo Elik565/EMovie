@@ -110,11 +110,17 @@ void EMClient::show_movie_list() {
     }
 }
 
-void EMClient::watch_movie() const {
+void EMClient::watch_movie() {
     std::string title;
     std::cin.ignore();
     std::cout << "Введите название фильма: ";
     std::getline(std::cin, title);
+
+    auto result = send_get("/check_watch?title=" + title);
+
+    if (result.empty()) {
+        return;
+    }
 
     std::thread movie_thread(play_movie, token, title);  // запускаем плеер в новом потоке
     movie_thread.join();  // ждем завершения работы потока

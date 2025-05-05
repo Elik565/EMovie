@@ -164,16 +164,30 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
     return "../Movies/" + filename;
 }
 
-void EMServer::handle_watch(const Request& request, Response& response) const {
+std::string EMServer::check_watch(const Request& request, Response& response) const {
     std::string title = request.get_param_value("title");
     if (title.empty()) {
         set_error(response, 400, "Не передано название фильма!");
-        return;
+        return "";
     }
 
     std::string playlist_filepath = get_playlist_filepath(title, response);  // получаем путь к hls плейлисту фильма
-    if (playlist_filepath == "") {
-        return;  // уже отправили ответ
+
+    if (playlist_filepath.empty()) {
+        return "";
+    }
+
+    response.status = 200;
+    response.set_content("{\"message\": \"Фильм готов к просмотру!\"}", "application/json");
+
+    return playlist_filepath;
+}
+
+void EMServer::handle_watch(const Request& request, Response& response) const {
+    std::string playlist_filepath = check_watch(request, response);
+
+    if (playlist_filepath.empty()) {
+        return;
     }
 
     send_hls_playlist(playlist_filepath, response);  // отправляем плейлист клиенту
@@ -214,6 +228,10 @@ void EMServer::handle_get(const Request& request, httplib::Response& response) c
     if (request.path == "/movie_list") {
         sql_result = handle_movie_list(request, response);
     }
+    else if (request.path == "/check_watch") {
+        check_watch(request, response);
+        return;
+    } 
     else if (request.path == "/watch") {
         handle_watch(request, response);
         return;

@@ -44,7 +44,7 @@ public:
     void show_movie_list();
 
     // метод просмотра фильма
-    void watch_movie() const;
+    void watch_movie();
 
     // метод выхода из профиля
     void exit_from_profile();
