@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <cpp-httplib/httplib.h>
 #include "database.hpp"
+#include <mutex>
 
 // функция преобразования результата sql в json
 nlohmann::json pgresult_to_json(PGresult* res);
@@ -33,6 +34,7 @@ private:
     httplib::Server server;
     EMDatabase db;
     std::unordered_map<std::string, SessionInfo> sessions;  // хэш-таблица для быстрого доступа по ключу (токену)
+    mutable std::mutex cout_mutex;  // мьютекс для защиты вывода в консоль (mutable позволит изменять мьютекс в константных методах)
 
     // метод проверки авторизации пользователя
     bool is_authorized(const httplib::Request& request, httplib::Response& response) const;
@@ -57,6 +59,9 @@ private:
 
     // метод обработки сегмента .ts
     void handle_segment(const httplib::Request& request, httplib::Response& response) const;
+
+    // метод безопасной печати в консоль
+    void safe_cout(const std::string& str) const;
 
     // метод обработки GET-запроса
     void handle_get(const httplib::Request& request, httplib::Response& response) const;

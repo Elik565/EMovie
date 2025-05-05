@@ -211,13 +211,22 @@ void EMServer::handle_segment(const Request& request, httplib::Response& respons
     response.body = segment_stream.str();
 }
 
+void EMServer::safe_cout(const std::string& str) const {
+    // переменная lock создаётся в текущем стеке функции, и у неё вызывается конструктор
+    // этот конструктор сразу же вызывает cout_mutex.lock() — то есть захватывает мьютекс, переданный по ссылке
+    // когда переменная lock выходит из области видимости, вызывается её деструктор
+    // в деструкторе вызывается cout_mutex.unlock()
+    std::lock_guard<std::mutex> lock(cout_mutex);  
+    std::cout << str << "\n";
+}
+
 void EMServer::handle_get(const Request& request, httplib::Response& response) const {
     // проверка, авторизован ли клиент
     if (!is_authorized(request, response)) {
         return;
     }
 
-    std::cout << "Получен GET-запрос с путем: " << request.path << " от " << get_login_from_request(request) << "\n";
+    safe_cout("Получен GET-запрос с путем: " + request.path + " от " + get_login_from_request(request));
 
     PGresult* sql_result = nullptr;
 
@@ -360,10 +369,10 @@ void EMServer::handle_post(const Request& request, httplib::Response& response) 
         if (!is_authorized(request, response)) {
             return;
         }
-        std::cout << "Получен POST-запрос с путем: " << request.path << " от " << get_login_from_request(request) << "\n";
+        safe_cout("Получен POST-запрос с путем: " + request.path + " от " + get_login_from_request(request));
     }
     else {
-        std::cout << "Получен POST-запрос с путем: " << request.path << "\n";
+        safe_cout("Получен POST-запрос с путем: " + request.path);
     }
     
     try {
