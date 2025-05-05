@@ -62,6 +62,14 @@ std::string get_token_from_request(const Request& request, Response& response) {
     return auth_header.substr(7);  // "Bearer " — 7 символов
 }
 
+std::string EMServer::get_login_from_request(const Request& request) {
+    // считается, что функция вызывается уже после всех проверок
+    std::string auth_header = request.get_header_value("Authorization");
+    std::string token = auth_header.substr(7);
+
+    return sessions[token].login;
+}
+
 PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
     // принимает на вход функцию, которая возвращает PGresult*
     try {
@@ -202,12 +210,12 @@ void EMServer::handle_segment(const Request& request, httplib::Response& respons
 }
 
 void EMServer::handle_get(const Request& request, httplib::Response& response) {
-    std::cout << "Получен GET-запрос с путем: " << request.path << std::endl;
-
     // проверка, авторизован ли клиент
     if (!is_authorized(request, response)) {
         return;
     }
+
+    std::cout << "Получен GET-запрос с путем: " << request.path << " от " << get_login_from_request(request) << "\n";
 
     PGresult* sql_result = nullptr;
 
@@ -341,13 +349,15 @@ void EMServer::handle_logout(const Request& request, Response& response) {
 }
 
 void EMServer::handle_post(const Request& request, httplib::Response& response) {
-    std::cout << "Получен POST-запрос с путем: " << request.path << std::endl;
-
     if (request.path != "/auth" && request.path != "/reg") {  // если не авторизация и не регистрация
         // проверка, авторизован ли клиент
         if (!is_authorized(request, response)) {
             return;
         }
+        std::cout << "Получен POST-запрос с путем: " << request.path << " от " << get_login_from_request(request) << "\n";
+    }
+    else {
+        std::cout << "Получен POST-запрос с путем: " << request.path << "\n";
     }
     
     try {

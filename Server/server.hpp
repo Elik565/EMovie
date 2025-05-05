@@ -37,6 +37,9 @@ private:
     // метод проверки авторизации пользователя
     bool is_authorized(const httplib::Request& request, httplib::Response& response);
 
+    // метод получения логина из запроса
+    std::string get_login_from_request(const httplib::Request& request);
+
     // метод проверки, является ли клиент администратором
     bool is_admin(const httplib::Request& request, httplib::Response& response);
 
