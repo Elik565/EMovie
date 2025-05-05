@@ -122,6 +122,8 @@ void EMClient::watch_movie() {
         return;
     }
 
+    std::cout << result["message"] << "\n";
+
     std::thread movie_thread(play_movie, token, title);  // запускаем плеер в новом потоке
     movie_thread.join();  // ждем завершения работы потока
 }

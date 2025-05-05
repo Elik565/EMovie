@@ -50,7 +50,7 @@ private:
     std::string get_playlist_filepath(const std::string& title, httplib::Response& response) const;
 
     // метод проверки на ошибки запроса просмотра фильма
-    std::string check_watch(const httplib::Request& request, httplib::Response& response) const;
+    void check_watch(const httplib::Request& request, httplib::Response& response) const;
 
     // метод отправки vlc hls-плейлиста фильма
     void handle_watch(const httplib::Request& request, httplib::Response& response) const;
