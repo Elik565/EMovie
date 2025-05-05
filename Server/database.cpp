@@ -16,10 +16,10 @@ EMDatabase::~EMDatabase() {
     std::cout << "Подключение к базе данных закрыто." << std::endl;
 }
 
-PGresult* EMDatabase::execute_query(const std::string& sql_query) {
+PGresult* EMDatabase::execute_query(const std::string& sql_query) const {
     return PQexec(conn, sql_query.c_str());
 } 
 
-std::string EMDatabase::get_sql_error() {
+std::string EMDatabase::get_sql_error() const {
     return PQerrorMessage(conn);
 }

@@ -35,37 +35,37 @@ private:
     std::unordered_map<std::string, SessionInfo> sessions;  // хэш-таблица для быстрого доступа по ключу (токену)
 
     // метод проверки авторизации пользователя
-    bool is_authorized(const httplib::Request& request, httplib::Response& response);
-
-    // метод получения логина из запроса
-    std::string get_login_from_request(const httplib::Request& request);
+    bool is_authorized(const httplib::Request& request, httplib::Response& response) const;
 
     // метод проверки, является ли клиент администратором
-    bool is_admin(const httplib::Request& request, httplib::Response& response);
+    bool is_admin(const httplib::Request& request, httplib::Response& response) const;
+
+    // метод получения логина из запроса
+    std::string get_login_from_request(const httplib::Request& request) const;
 
     // метод обработки запроса отображения списка фильмов
-    PGresult* handle_movie_list(const httplib::Request& request, httplib::Response& response);
+    PGresult* handle_movie_list(const httplib::Request& request, httplib::Response& response) const;
 
     // метод получения пути к hls плейлисту фильма
-    std::string get_playlist_filepath(const std::string& title, httplib::Response& response);
+    std::string get_playlist_filepath(const std::string& title, httplib::Response& response) const;
 
     // метод обработки запроса просмтора фильма
-    void handle_watch(const httplib::Request& request, httplib::Response& response);
+    void handle_watch(const httplib::Request& request, httplib::Response& response) const;
 
     // метод обработки сегмента .ts
-    void handle_segment(const httplib::Request& request, httplib::Response& response);
+    void handle_segment(const httplib::Request& request, httplib::Response& response) const;
 
     // метод обработки GET-запроса
-    void handle_get(const httplib::Request& request, httplib::Response& response);
+    void handle_get(const httplib::Request& request, httplib::Response& response) const;
 
     // метод обработки запроса регистрации нового клиента
-    PGresult* handle_reg(const nlohmann::json& body, httplib::Response& response);
+    PGresult* handle_reg(const nlohmann::json& body, httplib::Response& response) const;
 
     // метод обработки запроса авторизации клиента
     PGresult* handle_auth(const nlohmann::json& body, httplib::Response& response);
 
     // метод обработки запроса добавления фильма
-    PGresult* handle_add_movie(const nlohmann::json& body, httplib::Response& response);
+    PGresult* handle_add_movie(const nlohmann::json& body, httplib::Response& response) const;
 
     // метод обработки запроса завершения сессии клиента
     void handle_logout(const httplib::Request& request, httplib::Response& response);
@@ -78,7 +78,7 @@ public:
     EMServer(const std::string& conn_info);
 
     // деструктор
-    ~EMServer();
+    ~EMServer() = default;  // т.к. db будет автоматически уничтожен, то вызовется его деструктор
 
     // метод запуска сервера
     void start();

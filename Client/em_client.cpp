@@ -4,12 +4,21 @@
 
 using json = nlohmann::json;
 
-void replace_spaces(std::string& title) {
+void replace_spaces(std::string& str) {
     size_t pos = 0;
-    while ((pos = title.find(' ', pos)) != std::string::npos) {
-        title.replace(pos, 1, "%20");
-        pos += 3; // Двигаемся на длину "%20"
+    while ((pos = str.find(' ', pos)) != std::string::npos) {
+        str.replace(pos, 1, "%20");
+        pos += 3;  // Двигаемся на длину "%20"
     }
+}
+
+void play_movie(const std::string& token, const std::string& title) {
+    std::string encoded_title = title;
+    replace_spaces(encoded_title);  // кодируем название фильма для url (убираем пробелы)
+    
+    std::string url = "http://localhost:8080/watch?title=\"" + encoded_title + "\"";
+    std::string command = "vlc " + url + " --http-referrer=\"Bearer " + token + "\"";
+    std::system(command.c_str());  // запускаем команду
 }
 
 void EMClient::registration() {
@@ -72,13 +81,13 @@ void EMClient::logout() {
     auto result = send_post("/logout", {});
 
     if (!result.empty()) {
-        std::cout << result["message"] << "\n\n";
+        std::cout << result["message"] << "\n";
     }
 }
 
 
 EMClient::~EMClient() {
-    std::cout << "Завершение сессии...\n";
+    std::cout << "Завершение сессии...";
     logout();  // завершаем сессию
 }
 
@@ -101,16 +110,7 @@ void EMClient::show_movie_list() {
     }
 }
 
-void play_movie(const std::string& token, const std::string& title) {
-    std::string encoded_title = title;
-    replace_spaces(encoded_title);  // кодируем название фильма для url (убираем пробелы)
-    
-    std::string url = "http://localhost:8080/watch?title=\"" + encoded_title + "\"";
-    std::string command = "vlc " + url + " --http-referrer=\"Bearer " + token + "\"";
-    std::system(command.c_str());  // запускаем команду
-}
-
-void EMClient::watch_movie() {
+void EMClient::watch_movie() const {
     std::string title;
     std::cin.ignore();
     std::cout << "Введите название фильма: ";

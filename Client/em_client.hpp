@@ -2,6 +2,13 @@
 
 #include "base_client.hpp"
 
+// функция кодирования строки для url (замена пробелов)
+void replace_spaces(std::string& str);
+
+// функция проигрывания фильма через vlc
+void play_movie(const std::string& token, const std::string& title);
+
+
 class EMClient : public BaseClient {
 private:
     std::string login;
@@ -37,7 +44,7 @@ public:
     void show_movie_list();
 
     // метод просмотра фильма
-    void watch_movie();
+    void watch_movie() const;
 
     // метод выхода из профиля
     void exit_from_profile();

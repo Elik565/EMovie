@@ -9,6 +9,7 @@
 using json = nlohmann::json;
 using namespace httplib;
 
+/********** Вспомогательные функции **********/
 json pgresult_to_json(PGresult* res) {
     json json_res = json::array();
 
@@ -62,14 +63,6 @@ std::string get_token_from_request(const Request& request, Response& response) {
     return auth_header.substr(7);  // "Bearer " — 7 символов
 }
 
-std::string EMServer::get_login_from_request(const Request& request) {
-    // считается, что функция вызывается уже после всех проверок
-    std::string auth_header = request.get_header_value("Authorization");
-    std::string token = auth_header.substr(7);
-
-    return sessions[token].login;
-}
-
 PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
     // принимает на вход функцию, которая возвращает PGresult*
     try {
@@ -97,23 +90,8 @@ void send_hls_playlist(const std::string& filepath, httplib::Response& response)
 }
 
 
-EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
-    // лямбда захватывает поля текущего класса и sql-запрос
-    // request и response - это параметры лямбды
-    server.Get(R"(/.*)", [this](const Request& request, Response& response) {
-        handle_get(request, response);
-    });
-
-    server.Post(R"(/.*)", [this](const Request& request, Response& response) {
-        handle_post(request, response);
-    });
-}
-
-EMServer::~EMServer() {
-    // т.к. db будет автоматически уничтожен, то вызовется его деструктор
-}
-
-bool EMServer::is_authorized(const Request& request, Response& response) {
+/********** Private методы EMServer **********/
+bool EMServer::is_authorized(const Request& request, Response& response) const {
     std::string token = get_token_from_request(request, response);
 
     if (token == "") {
@@ -128,14 +106,15 @@ bool EMServer::is_authorized(const Request& request, Response& response) {
     return true;
 }
 
-bool EMServer::is_admin(const Request& request, Response& response) {
+bool EMServer::is_admin(const Request& request, Response& response) const {
     std::string token = get_token_from_request(request, response);
 
     if (token == "") {
         return false;  // уже отправили ответ
     }
 
-    if (sessions[token].is_admin == true) {
+    auto it = sessions.find(token);
+    if (it != sessions.end() && it->second.is_admin) {
         return true;
     }
     
@@ -143,12 +122,25 @@ bool EMServer::is_admin(const Request& request, Response& response) {
     return false;
 }
 
-PGresult* EMServer::handle_movie_list(const Request& request, Response& response) {
+std::string EMServer::get_login_from_request(const Request& request) const {
+    // считается, что функция вызывается уже после всех проверок
+    std::string auth_header = request.get_header_value("Authorization");
+
+    if (auth_header.empty()) {
+        auth_header = request.get_header_value("Referer");
+    }
+    
+    std::string token = auth_header.substr(7);
+
+    return sessions.at(token).login;  // метод at() не изменяет контейнер
+}
+
+PGresult* EMServer::handle_movie_list(const Request& request, Response& response) const {
     Queries q;  // список sql-запросов
     return db.execute_query(q.movie_list);
 }
 
-std::string EMServer::get_playlist_filepath(const std::string& title, Response& response) {
+std::string EMServer::get_playlist_filepath(const std::string& title, Response& response) const {
     std::string sql_query = "SELECT filepath FROM movies WHERE title LIKE '%" + title + "%'";
     PGresult* sql_result = db.execute_query(sql_query);  // выполняем sql-запрос
 
@@ -172,7 +164,7 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
     return "../Movies/" + filename;
 }
 
-void EMServer::handle_watch(const Request& request, Response& response) {
+void EMServer::handle_watch(const Request& request, Response& response) const {
     std::string title = request.get_param_value("title");
     if (title.empty()) {
         set_error(response, 400, "Не передано название фильма!");
@@ -187,7 +179,7 @@ void EMServer::handle_watch(const Request& request, Response& response) {
     send_hls_playlist(playlist_filepath, response);  // отправляем плейлист клиенту
 }
 
-void EMServer::handle_segment(const Request& request, httplib::Response& response) {
+void EMServer::handle_segment(const Request& request, httplib::Response& response) const {
     // формируем путь до нужного сегмента
     std::string segment_filepath = "../Movies" + request.path.substr(0, request.path.rfind("_"));
     segment_filepath += request.path;
@@ -209,7 +201,7 @@ void EMServer::handle_segment(const Request& request, httplib::Response& respons
     response.body = segment_stream.str();
 }
 
-void EMServer::handle_get(const Request& request, httplib::Response& response) {
+void EMServer::handle_get(const Request& request, httplib::Response& response) const {
     // проверка, авторизован ли клиент
     if (!is_authorized(request, response)) {
         return;
@@ -247,7 +239,7 @@ void EMServer::handle_get(const Request& request, httplib::Response& response) {
     response.set_content(json_res.dump(), "application/json");  // устанавливаем содержимое HTTP ответа в виде json
 }
 
-PGresult* EMServer::handle_reg(const json& body, Response& response) {
+PGresult* EMServer::handle_reg(const json& body, Response& response) const {
     // проверяем наличие всех необходимых полей
     if (!body.contains("username") || !body.contains("password")) {
         set_error(response, 400, "Ожидаются поля: username (text), password (text)!");
@@ -312,7 +304,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
     });
 }
 
-PGresult* EMServer::handle_add_movie(const json& body, Response& response) {
+PGresult* EMServer::handle_add_movie(const json& body, Response& response) const {
     // проверяем наличие всех необходимых полей
     if (!body.contains("id") || !body.contains("title") || !body.contains("year") || !body.contains("filepath")) {
         set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int), filepath (text)!");
@@ -401,6 +393,19 @@ void EMServer::handle_post(const Request& request, httplib::Response& response) 
     }
 }
 
+
+/********** Public методы EMServer **********/
+EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
+    // лямбда захватывает поля текущего класса и sql-запрос
+    // request и response - это параметры лямбды
+    server.Get(R"(/.*)", [this](const Request& request, Response& response) {
+        handle_get(request, response);
+    });
+
+    server.Post(R"(/.*)", [this](const Request& request, Response& response) {
+        handle_post(request, response);
+    });
+}
 
 void EMServer::start() {
     std::cout << "Сервер запущен на http://localhost:8080\n";

@@ -6,6 +6,7 @@ using namespace httplib;
 json check_http_result(Result& result) {
     if (result) {
         if (result->status == 200) {
+            std::cout << "\n";
             return json::parse(result->body);
         } else {
             std::cerr << "Ошибка " << result->status << ": " << result->body << "\n\n";
