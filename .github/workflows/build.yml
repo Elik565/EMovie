@@ -1,0 +1,50 @@
+# В этом файле описан процесс сборки и упаковки артефактов
+
+name: Build and Release
+
+on:
+  push:
+    branches: 
+      - main  # для сборки при push в main
+  tags:
+    - 'v*'  # для сборки при push тегов, например v1.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # github actions будет запускать сборку на ВМ с ubuntu
+
+    steps:
+    # шаг 1 - проверка кода
+    - name: Checkout code
+      uses: actions/checkout@v3  # подключает github actions для клонирования репозитория в ВМ
+                                 # v3 - версия действия
+
+    # шаг 2 - установка зависимостей
+    - name: Install dependencies
+      run: |  # выполнение bash-скрипта
+        sudo apt-get update
+        sudo apt-get install -y cmake g++ libpq-dev
+
+    # шаг 3 - создание сборки с CMake
+    - name: Configure CMake
+      run: cmake -S . -B build  # -S указывает, где находятся исходники
+                                # -B указывает, куда CMake положит файлы сборки
+
+    # шаг 4 - сборка проекта
+    - name: Build the project
+      run: cmake --build build  # --build указывает путь к папке сборки
+
+    # шаг 5 - архивирование исполняемых файлов в .zip
+    - name: Archive executables
+      run: |
+        mkdir -p release
+        cp build/server release/
+        cp build/client release/
+        zip -r release-v${GITHUB_REF#refs/tags/}.zip release
+
+    # шаг 6 - загрузка артефактов (для скачивания архива)
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-v${GITHUB_REF#refs/tags/}.zip
+        path: release-v${GITHUB_REF#refs/tags/}.zip
