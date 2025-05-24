@@ -6,8 +6,8 @@ on:
   push:
     branches: 
       - main  # для сборки при push в main
-  tags:
-    - 'v*'  # для сборки при push тегов, например v1.0
+    tags:
+      - 'v*'  # для сборки при push тегов, например v1.0
 
 jobs:
   build:
