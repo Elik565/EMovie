@@ -38,11 +38,11 @@ jobs:
         mkdir -p release
         cp build/server release/
         cp build/client release/
-        zip -r release-v${GITHUB_REF#refs/tags/}.zip release
+        zip -r EMovie-${{ github.ref_name }}.zip release
 
     # шаг 6 - загрузка артефактов (для скачивания архива)
     - name: Upload release artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: release-v${{ github.ref_name }}.zip
-        path: release-v${{ github.ref_name }}.zip
+        name: EMovie-${{ github.ref_name }}
+        path: EMovie-${{ github.ref_name }}.zip  # путь к архиву на ВМ
