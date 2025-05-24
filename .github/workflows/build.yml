@@ -4,8 +4,6 @@ name: Build and Release
 
 on:
   push:
-    branches: 
-      - main  # для сборки при push в main
     tags:
       - 'v*'  # для сборки при push тегов, например v1.0
 
@@ -46,5 +44,5 @@ jobs:
     - name: Upload release artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: release-v${GITHUB_REF#refs/tags/}.zip
-        path: release-v${GITHUB_REF#refs/tags/}.zip
+        name: release-v${{ github.ref_name }}.zip
+        path: release-v${{ github.ref_name }}.zip
