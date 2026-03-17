@@ -1,46 +1,62 @@
-# EMovie
-EMServer — это HTTP-сервер, реализованный на C++ с использованием cpp-httplib, nlohmann::json, и PostgreSQL. Сервер обеспечивает:
-    - Регистрацию и авторизацию пользователей;
-    - Управление сессиями с использованием токенов;
-    - Отображение списка фильмов;
-    - Потоковую передачу HLS-видео (HTTP Live Streaming);
-    - Разграничение прав доступа (пользователь / администратор);
-    - Возможность добавления фильмов (для администраторов).
-Основные компоненты:
-    - EMServer — основной класс сервера, обрабатывающий HTTP-запросы и управляющий сессиями;
-    - EMDatabase — модуль работы с базой данных PostgreSQL;
-    - HLS-обработка — поддержка плейлистов и сегментов .ts;
-    - JWT-like токены — для аутентификации пользователей и хранения информации о сессии.
-Возможности:
-    - POST /reg — регистрация нового пользователя;
-    - POST /auth — авторизация пользователя, возвращает токен; 
-    - POST /logout — завершение сессии;
-    - GET /movie_list — список доступных фильмов;
-    - GET /watch?title=<название> — получение HLS-плейлиста фильма;
-    - POST /add_movie — добавление нового фильма (только для администраторов).
-    
-EMClient представляет собой консольного клиента, взаимодействующего с сервером EMServer через HTTP. Он предоставляет пользователю простой интерфейс для регистрации, авторизации, просмотра фильмов и (при наличии прав администратора) управления контентом.
-Возможности:
-    - Регистрация и вход в систему;
-    - Хранение токена авторизации для дальнейших запросов;
-    - Получение и отображение списка фильмов;
-    - Проигрывание выбранного фильма через VLC Media Player;
-    - Добавление нового фильма (только для администратора);
-    - Завершение сессии и выход из профиля.
+# EMovie — HTTP Server and Client (C++ / PostgreSQL)
 
-Использование:
-    При запуске клиент:
-        - Запрашивает логин и пароль;
-        - Выполняет регистрацию, если аккаунт не найден;
-        - После успешной авторизации выводит меню с возможными действиями:
-            - Просмотр списка фильмов;
-            - Воспроизведение фильма;
-            - Добавление нового фильма (если администратор);
-            - Повторная авторизация (на случай, если сервер перезапустится);
-            - Выход из профиля.
-            
-Инструкция по запуску:
-    Для работы сервера необходимо создать свою базу данных и восстановить данные из дампа emovie.sql: 
-        1. Создаем базу данных: createdb -U <имя_пользователя> "EMovieDB";
-        2. Загружаем дамп: psql -U <имя_пользователя> -d "EMovieDB" -f emovie.sql.
-    При запуске сервера надо передавать логин и пароль для подключения к базе данных "EMovieDB".
+## Overview
+
+**EMovie** is a project consisting of an HTTP server (**EMServer**) and a console client (**EMClient**) for managing and streaming movies.  
+The server is implemented in **C++** using **cpp-httplib**, **nlohmann::json**, and **PostgreSQL**.  
+The client interacts with the server via HTTP, providing user authentication, session management, and content access.  
+
+This project demonstrates backend development, database integration, session handling, and streaming.
+
+---
+
+## Features
+
+### EMServer
+
+- User registration and authentication with token-based sessions
+- Session management using JWT-like tokens
+- Movie listing and HLS video streaming (HTTP Live Streaming)
+- Role-based access control (user/admin)
+- Movie management (adding new movies for admins)
+
+**HTTP Endpoints:**
+
+- `POST /reg` — register a new user  
+- `POST /auth` — login and receive session token  
+- `POST /logout` — end user session  
+- `GET /movie_list` — get list of available movies  
+- `GET /watch?title=<name>` — get HLS playlist for a movie  
+- `POST /add_movie` — add a movie (admin only)  
+
+### EMClient
+
+- Console-based client for interacting with **EMServer**
+- Handles user registration, login, and session management
+- Fetches and displays movie list
+- Plays selected movies via VLC Media Player
+- Allows admins to add movies
+- Handles session renewal if the server restarts
+
+---
+
+## Architecture
+
+- **EMServer** — main server class, handles HTTP requests and sessions  
+- **EMDatabase** — PostgreSQL integration module  
+- **HLS module** — supports playlists and `.ts` video segments  
+- **JWT-like tokens** — manage authentication and session information  
+
+---
+
+## Usage
+
+1. Create a PostgreSQL database:  
+```bash
+createdb -U <username> EMovieDB
+```
+2. Load database dump:
+```bash
+psql -U <username> -d EMovieDB -f emovie.sql
+```
+3. Run EMServer with database credentials
