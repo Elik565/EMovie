@@ -10,6 +10,41 @@ This project demonstrates backend development, database integration, session han
 
 ---
 
+## Install
+Make sure you have the PostgreSQL development libraries (libpq-dev) installed.
+
+1. Clone the repository and build project:
+``` bash
+git clone https://github.com/Elik565/EMovie.git
+cd EMovie
+cmake -S . -B build
+cmake --build build
+```
+2. Create database:
+``` bash
+createdb -U <username> EMovieDB  # make sure that the user exists and has permission to connect and create the database
+psql -U <username> -d EMovieDB -f emovie.sql
+```
+
+---
+## Usage
+Before running the server, make sure that:
+- A database user is created
+- The user has access to the database and (optionally) a password
+  
+1. Run EMServer with database credentials:
+``` bash
+cd build
+./server <username> <password>
+```
+2. Run EMClient:
+``` bash
+./client
+```
+Now you can select a movie to watch or update the data if you are an administrator.
+To make a client an administrator, connect to the database and set the 'can_modify' field to true in the users table for the corresponding user.
+---
+
 ## Features
 
 ### EMServer
@@ -46,17 +81,3 @@ This project demonstrates backend development, database integration, session han
 - **EMDatabase** — PostgreSQL integration module  
 - **HLS module** — supports playlists and `.ts` video segments  
 - **JWT-like tokens** — manage authentication and session information  
-
----
-
-## Usage
-
-1. Create a PostgreSQL database:  
-```bash
-createdb -U <username> EMovieDB
-```
-2. Load database dump:
-```bash
-psql -U <username> -d EMovieDB -f emovie.sql
-```
-3. Run EMServer with database credentials
