@@ -21,7 +21,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: movies; Type: TABLE; Schema: public; Owner: postgres
+-- Name: movies; Type: TABLE; Schema: public
 --
 
 CREATE TABLE public.movies (
@@ -30,9 +30,6 @@ CREATE TABLE public.movies (
     year integer NOT NULL,
     filepath text
 );
-
-
-ALTER TABLE public.movies OWNER TO postgres;
 
 CREATE TABLE public.users (
     id integer NOT NULL,
@@ -55,7 +52,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- Data for Name: movies; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: movies; Type: TABLE DATA; Schema: public
 --
 
 COPY public.movies (id, title, year, filepath) FROM stdin;
@@ -77,7 +74,7 @@ SELECT pg_catalog.setval('public.users_id_seq', 10, true);
 
 
 --
--- Name: movies movies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: movies movies_pkey; Type: CONSTRAINT; Schema: public
 --
 
 ALTER TABLE ONLY public.movies

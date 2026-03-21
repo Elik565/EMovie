@@ -18,12 +18,14 @@ int main(int argc, char* argv[]) {
         exit(1); 
     }
 
+    std::string conn_info;
     if (argc == 2) {
-        std::cerr << "Не передан пароль!\n";
-        exit(1); 
+        std::cerr << "Warning: The password was not transmitted!\n";
+        conn_info = "dbname=EMovieDB host=localhost user=" + std::string(argv[1]);
     }
-
-    std::string conn_info = "dbname=EMovieDB host=localhost user=" + std::string(argv[1]) + " password=" + argv[2];
+    else {
+        conn_info = "dbname=EMovieDB host=localhost user=" + std::string(argv[1]) + " password=" + argv[2];
+    }
 
     signal(SIGINT, sigint_handler);  // устанавливаем обработчик сигнала ctrl+c
 
