@@ -5,6 +5,7 @@
 #include <random>
 #include <string>
 #include <fstream>
+#include <filesystem>
 
 using json = nlohmann::json;
 using namespace httplib;
@@ -159,9 +160,15 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
     }
 
     std::string filename = PQgetvalue(sql_result, 0, 0);  // достаем значение из sql-результата 
+    std::string path = "../Movies/" + filename;
     PQclear(sql_result);
 
-    return "../Movies/" + filename;
+    if (!std::filesystem::exists(path)) {
+        set_error(response, 404, "The HLS playlist for this movie was not found! Contact the administrator");
+        return "";
+    }
+
+    return path;
 }
 
 void EMServer::check_watch(const Request& request, Response& response) const {
