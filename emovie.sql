@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+\restrict f3AwDq4HRyoeJNjBO8e7i5ORXCd83d8dZvg25RzpLRVajnlH962BPbSZ4NoyY3n
 
 -- Dumped from database version 18.0
 -- Dumped by pg_dump version 18.0
@@ -26,9 +26,9 @@ SET row_security = off;
 CREATE DATABASE "EMovieDB" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.UTF-8';
 
 
-\unrestrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+\unrestrict f3AwDq4HRyoeJNjBO8e7i5ORXCd83d8dZvg25RzpLRVajnlH962BPbSZ4NoyY3n
 \connect "EMovieDB"
-\restrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+\restrict f3AwDq4HRyoeJNjBO8e7i5ORXCd83d8dZvg25RzpLRVajnlH962BPbSZ4NoyY3n
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -107,7 +107,7 @@ COPY public.movies (id, title, year, filepath) FROM stdin;
 2	Москва слезам не верит	1979	москва_слезам_не_верит/москва_слезам_не_верит_.m3u8
 3	Операция Ы	1965	операция_ы/операция_ы_.m3u8
 4	Домовенок Кузя	1986	домовенок_кузя/домовенок_кузя_.m3u8
-5	Eclipse	2026	eclipse/eclipse.m3u8
+5	Eclipse	2026	eclipse/eclipse_.m3u8
 \.
 
 
@@ -158,5 +158,5 @@ ALTER TABLE ONLY public.users
 -- PostgreSQL database dump complete
 --
 
-\unrestrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+\unrestrict f3AwDq4HRyoeJNjBO8e7i5ORXCd83d8dZvg25RzpLRVajnlH962BPbSZ4NoyY3n
 
