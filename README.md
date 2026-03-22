@@ -42,7 +42,29 @@ cd build
 ./client
 ```
 Now you can select a movie to watch or update the data if you are an administrator.
+
 To make a client an administrator, connect to the database and set the 'can_modify' field to true in the users table for the corresponding user.
+
+### How to add a movie
+
+Make sure ffmpeg is installed on your system
+
+1. Download or copy the movie into the Movies directory
+2. Create a folder for your movie:
+``` bash
+mkdir Movies/your_movie
+```
+3. Generate an HLS playlist with segments:
+``` bash
+ffmpeg -i Movies/your_movie.mp4 \
+       -codec: copy \
+       -start_number 0 \
+       -hls_time 5 \  # how many seconds will be in segment
+       -hls_list_size 0 \
+       -f hls Movies/your_movie/your_movie.m3u8
+```
+4. Add the movie to the database using the client app or directly via SQL
+5. Optionally, delete the original source file.
 ---
 
 ## Features
