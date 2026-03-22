@@ -23,17 +23,17 @@ int main() {
 
     std::string answer;
     while(answer != "exit") {
-        std::cout << "\tМеню действий:\n";
-        std::cout << "1 - Показать список фильмов;\n";
-        std::cout << "2 - Начать просмотр фильма;\n";
-        std::cout << "3 - Повторная авторизация;\n";
+        std::cout << "\tAction menu:\n";
+        std::cout << "1 - Show movie list;\n";
+        std::cout << "2 - Start watching a movie;\n";
+        std::cout << "3 - Re-login;\n";
 
         // действия для администратора
         if (emclient_ptr->is_admin) {
-            std::cout << "4 - Добавить фильм;\n";
+            std::cout << "4 -  Add a movie;\n";
         }
 
-        std::cout << "exit - Выйти\n\n";
+        std::cout << "exit - Quit\n\n";
 
         bool correct_answer = false;
         while (!correct_answer) {
