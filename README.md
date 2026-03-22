@@ -59,9 +59,9 @@ mkdir Movies/your_movie
 ffmpeg -i Movies/your_movie.mp4 \
        -codec: copy \
        -start_number 0 \
-       -hls_time 5 \  # how many seconds will be in segment
+       -hls_time 5 \
        -hls_list_size 0 \
-       -f hls Movies/your_movie/your_movie.m3u8
+       -f hls Movies/your_movie/your_movie_.m3u8  # attention on _
 ```
 4. Add the movie to the database using the client app or directly via SQL
 5. Optionally, delete the original source file.
