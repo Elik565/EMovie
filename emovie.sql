@@ -2,12 +2,38 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.8
--- Dumped by pg_dump version 16.8
+\restrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+
+-- Dumped from database version 18.0
+-- Dumped by pg_dump version 18.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: EMovieDB; Type: DATABASE; Schema: -; Owner: -
+--
+
+CREATE DATABASE "EMovieDB" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.UTF-8';
+
+
+\unrestrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+\connect "EMovieDB"
+\restrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -21,7 +47,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: movies; Type: TABLE; Schema: public
+-- Name: movies; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.movies (
@@ -31,12 +57,22 @@ CREATE TABLE public.movies (
     filepath text
 );
 
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
 CREATE TABLE public.users (
     id integer NOT NULL,
     username text NOT NULL,
     password text NOT NULL,
     can_modify boolean DEFAULT false NOT NULL
 );
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
 
 CREATE SEQUENCE public.users_id_seq
     AS integer
@@ -46,13 +82,23 @@ CREATE SEQUENCE public.users_id_seq
     NO MAXVALUE
     CACHE 1;
 
+
+--
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: -
+--
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 
 --
--- Data for Name: movies; Type: TABLE DATA; Schema: public
+-- Data for Name: movies; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.movies (id, title, year, filepath) FROM stdin;
@@ -61,7 +107,13 @@ COPY public.movies (id, title, year, filepath) FROM stdin;
 2	Москва слезам не верит	1979	москва_слезам_не_верит/москва_слезам_не_верит_.m3u8
 3	Операция Ы	1965	операция_ы/операция_ы_.m3u8
 4	Домовенок Кузя	1986	домовенок_кузя/домовенок_кузя_.m3u8
+5	Eclipse	2026	eclipse/eclipse.m3u8
 \.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: -
+--
 
 COPY public.users (id, username, password, can_modify) FROM stdin;
 1	admin1	qwerty	t
@@ -70,18 +122,33 @@ COPY public.users (id, username, password, can_modify) FROM stdin;
 6	client3	ytrewq	f
 \.
 
+
+--
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
 SELECT pg_catalog.setval('public.users_id_seq', 10, true);
 
 
 --
--- Name: movies movies_pkey; Type: CONSTRAINT; Schema: public
+-- Name: movies movies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.movies
     ADD CONSTRAINT movies_pkey PRIMARY KEY (id);
 
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_username_key UNIQUE (username);
@@ -90,4 +157,6 @@ ALTER TABLE ONLY public.users
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict VPr1mdEpnUMiuYxh6uX8ag92O4FkCYghuBRZU7t7yxUUDJfdWZMXFoJQUyTGgP9
 

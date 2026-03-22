@@ -22,7 +22,7 @@ cmake --build build
 ```
 2. Create database:
 ``` bash
-createdb -U <username> EMovieDB  # make sure that the user exists and has permission to connect and create the database
+# make sure that the user exists and has permission to connect and create the database
 psql -U <username> -d EMovieDB -f emovie.sql
 ```
 
