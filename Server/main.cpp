@@ -5,16 +5,16 @@
 std::unique_ptr<EMServer> emserver_ptr;  // глобальный указатель на сервер
 
 void sigint_handler(int sigint) {
-    std::cout << "\nПолучен сигнал о завершении работы сервера.\n";
+    std::cout << "\nReceived signal to shut down the server\n";
     if (emserver_ptr) {
         emserver_ptr->stop();
-        std::cout << "Работа сервера завершена.\n";
+        std::cout << "Server has stopped.\n";
     }
 }
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
-        std::cerr << "Не передан логин!\n";
+        std::cerr << "Login not provided!\n";
         exit(1); 
     }
 

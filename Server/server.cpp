@@ -57,7 +57,7 @@ std::string get_token_from_request(const Request& request, Response& response) {
 
     // если нет типа токена Bearer
     if (auth_header.substr(0, 7) != "Bearer ") {
-        set_error(response, 400, "Некорректный заголовок проверки авторизации (не передан токен)!");
+        set_error(response, 400, "Invalid authorization verification header (no token passed)!");
         return "";
     }
 
@@ -69,7 +69,7 @@ PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
     try {
         return func();
     } catch (...) {
-        set_error(response, 400, "Ошибка при формировании sql-запроса!");
+        set_error(response, 400, "Error when forming an sql query!");
         return nullptr;
     }
 }
@@ -77,7 +77,7 @@ PGresult* safe_sql_query(Response& response, std::function<PGresult*()> func) {
 void send_hls_playlist(const std::string& filepath, httplib::Response& response) {
     std::ifstream fin(filepath);
     if (!fin) {
-        set_error(response, 404, "Плейлист HLS не найден!");
+        set_error(response, 404, "HLS playlist not found or cannot be opened!");
         return;
     }
 
@@ -100,7 +100,7 @@ bool EMServer::is_authorized(const Request& request, Response& response) const {
     }
     
     if (sessions.find(token) == sessions.end()) {  // поиск токена в текущих сессиях
-        set_error(response, 401, "Пользователь не авторизован!");
+        set_error(response, 401, "User is not logged in!");
         return false;
     }
 
@@ -119,7 +119,7 @@ bool EMServer::is_admin(const Request& request, Response& response) const {
         return true;
     }
     
-    set_error(response, 401, "Пользователь не является администратором!");
+    set_error(response, 401, "User is not an administrator!");
     return false;
 }
 
@@ -148,14 +148,14 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
     // проверяем на наличие ошибок и на нахождение фильма
     if (!sql_result || PQntuples(sql_result) == 0) {
         PQclear(sql_result);
-        set_error(response, 404, "Фильм с таким названием не найден!");
+        set_error(response, 404, "Film with that name not found.!");
         return "";
     }
 
     // если вернулось несколько строк
     if (PQntuples(sql_result) > 1) {
         PQclear(sql_result);
-        set_error(response, 400, "Найдено несколько фильмов с таким названием! Введите название более точно");
+        set_error(response, 400, "Multiple movies found with this title! Please specify the title more precisely");
         return "";
     }
 
@@ -164,7 +164,7 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
     PQclear(sql_result);
 
     if (!std::filesystem::exists(path)) {
-        set_error(response, 404, "The HLS playlist for this movie was not found! Contact the administrator");
+        set_error(response, 404, "HLS playlist not found! Contact the administrator");
         return "";
     }
 
@@ -174,7 +174,7 @@ std::string EMServer::get_playlist_filepath(const std::string& title, Response& 
 void EMServer::check_watch(const Request& request, Response& response) const {
     std::string title = request.get_param_value("title");
     if (title.empty()) {
-        set_error(response, 400, "Не передано название фильма!");
+        set_error(response, 400, "Movie title not provided!");
         return;
     }
 
@@ -183,7 +183,7 @@ void EMServer::check_watch(const Request& request, Response& response) const {
     }  
 
     response.status = 200;
-    response.set_content("{\"message\": \"Фильм готов к просмотру!\"}", "application/json");
+    response.set_content("{\"message\": \"Movie is ready to watch!\"}", "application/json");
 }
 
 void EMServer::handle_watch(const Request& request, Response& response) const {
@@ -204,7 +204,7 @@ void EMServer::handle_segment(const Request& request, httplib::Response& respons
     // открываем сегмент в бинарном виде
     std::ifstream fin(segment_filepath, std::ios::binary);
     if (!fin) {
-        set_error(response, 404, "Файл сегмента не найден!");
+        set_error(response, 404, "Segment file not found!");
         return;
     }
 
@@ -233,7 +233,7 @@ void EMServer::handle_get(const Request& request, httplib::Response& response) c
         return;
     }
 
-    safe_cout("Получен GET-запрос с путем: " + request.path + " от " + get_login_from_request(request));
+    safe_cout("Received GET request with path: " + request.path + " from " + get_login_from_request(request));
 
     PGresult* sql_result = nullptr;
 
@@ -253,7 +253,7 @@ void EMServer::handle_get(const Request& request, httplib::Response& response) c
         return;
     }
     else {
-        set_error(response, 404, "Маршрут не найден!");
+        set_error(response, 404, "Route not found!");
         return;
     }
 
@@ -272,7 +272,7 @@ void EMServer::handle_get(const Request& request, httplib::Response& response) c
 PGresult* EMServer::handle_reg(const json& body, Response& response) const {
     // проверяем наличие всех необходимых полей
     if (!body.contains("username") || !body.contains("password")) {
-        set_error(response, 400, "Ожидаются поля: username (text), password (text)!");
+        set_error(response, 400, "Expected fields: username (text), password (text)!");
         return nullptr;
     }
 
@@ -294,7 +294,7 @@ PGresult* EMServer::handle_reg(const json& body, Response& response) const {
 PGresult* EMServer::handle_auth(const json& body, Response& response) {
     // проверяем наличие всех необходимых полей
     if (!body.contains("login") || !body.contains("password")) {
-        set_error(response, 400, "Ожидаются поля: login (text), password (text)!");
+        set_error(response, 400, "Expected fields: login (text), password (text)!");
         return nullptr;
     }
 
@@ -313,7 +313,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
         if (PQresultStatus(sql_result) == PGRES_TUPLES_OK) {
             int rows = PQntuples(sql_result);
             if (rows == 0) {  // если вернулось 0 строк
-                set_error(response, 404, "Пользователь не найден!");
+                set_error(response, 404, "User not found!");
                 PQclear(sql_result);
                 return nullptr;
             }
@@ -323,7 +323,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
                 sessions[token].is_admin = (PQgetvalue(sql_result, 0, 0)[0] == 't');  // флаг администратора - туда же
 
                 PQclear(sql_result);
-                json json_response = { {"message", "Успешная авторизация!"}, {"token", token}, {"is_admin", sessions[token].is_admin} };
+                json json_response = { {"message", "Authorization successful!"}, {"token", token}, {"is_admin", sessions[token].is_admin} };
                 response.set_content(json_response.dump(), "application/json");
                 response.status = 200;
                 return nullptr;
@@ -337,7 +337,7 @@ PGresult* EMServer::handle_auth(const json& body, Response& response) {
 PGresult* EMServer::handle_add_movie(const json& body, Response& response) const {
     // проверяем наличие всех необходимых полей
     if (!body.contains("id") || !body.contains("title") || !body.contains("year") || !body.contains("filepath")) {
-        set_error(response, 400, "Ожидаются поля: id (int), title (text), year (int), filepath (text)!");
+        set_error(response, 400, "Expected fields: id (int), title (text), year (int), filepath (text)!");
         return nullptr;
     }
 
@@ -367,7 +367,7 @@ void EMServer::handle_logout(const Request& request, Response& response) {
 
     sessions.erase(token);  // удаляем сессию
     response.status = 200;
-    response.set_content("{\"message\": \"Сессия завершена!\"}", "application/json");
+    response.set_content("{\"message\": \"Session ended!\"}", "application/json");
 }
 
 void EMServer::handle_post(const Request& request, httplib::Response& response) {
@@ -376,10 +376,10 @@ void EMServer::handle_post(const Request& request, httplib::Response& response) 
         if (!is_authorized(request, response)) {
             return;
         }
-        safe_cout("Получен POST-запрос с путем: " + request.path + " от " + get_login_from_request(request));
+        safe_cout("Received POST request with path: " + request.path + " from " + get_login_from_request(request));
     }
     else {
-        safe_cout("Получен POST-запрос с путем: " + request.path);
+        safe_cout("Received POST request with path: " + request.path);
     }
     
     try {
@@ -415,11 +415,11 @@ void EMServer::handle_post(const Request& request, httplib::Response& response) 
 
         PQclear(sql_result);
         response.status = 200;
-        response.set_content("{\"message\": \"Успешно!\"}", "application/json");
+        response.set_content("{\"message\": \"Success!\"}", "application/json");
     }   
     catch (const std::exception& exc) {  // этот блок обрабатывает исключения
         // ошибка при парсинге json
-        set_error(response, 400, "Некорректный JSON!");
+        set_error(response, 400, "Invalid JSON!");
     }
 }
 
@@ -438,11 +438,11 @@ EMServer::EMServer(const std::string& conn_info) : db(conn_info) {
 }
 
 void EMServer::start() {
-    std::cout << "Сервер запущен на http://localhost:8080\n";
-    std::cout << "Нажмите Ctrl+C для завершения работы сервера...\n";
+    std::cout << "Server is running at http://localhost:8080\n";
+    std::cout << "Press Ctrl+C to stop the server...\n";
 
     if (!server.listen("0.0.0.0", 8080)) {  // начинаем слушать запросы
-        std::cerr << "Не удалось запустить сервер (возможно, порт занят)\n";
+        std::cerr << "Failed to start the server (port may be in use)\n";
     }
 }
 

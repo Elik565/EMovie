@@ -9,10 +9,10 @@ json check_http_result(Result& result) {
             std::cout << "\n";
             return json::parse(result->body);
         } else {
-            std::cerr << "Ошибка " << result->status << ": " << result->body << "\n\n";
+            std::cerr << "Error " << result->status << ": " << result->body << "\n\n";
         }
     } else {
-        std::cerr << "Ошибка: нет ответа от сервера!\n\n";
+        std::cerr << "Error: No response from the server!\n\n";
     }
     return {};
 }

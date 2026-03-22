@@ -5,7 +5,7 @@ EMDatabase::EMDatabase(const std::string& conn_info) {
     conn = PQconnectdb(conn_info.c_str());  // пытаемся подключиться к бд
 
     if (PQstatus(conn) != CONNECTION_OK) {
-        std::cerr << "Не удалось подключиться к базе данных: " << PQerrorMessage(conn);
+        std::cerr << "Failed to connect to the database: " << PQerrorMessage(conn);
         PQfinish(conn);
         exit(1);
     }
@@ -13,7 +13,7 @@ EMDatabase::EMDatabase(const std::string& conn_info) {
 
 EMDatabase::~EMDatabase() {
     PQfinish(conn);
-    std::cout << "Подключение к базе данных закрыто." << std::endl;
+    std::cout << "Database connection closed." << std::endl;
 }
 
 PGresult* EMDatabase::execute_query(const std::string& sql_query) const {

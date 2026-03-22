@@ -22,11 +22,11 @@ void play_movie(const std::string& token, const std::string& title) {
 }
 
 void EMClient::registration() {
-    std::cout << "\n\tРегистрация:\n";
+    std::cout << "\nRegistration:\n";
 
-    std::cout << "Введите имя пользователя: ";
+    std::cout << "Enter the username: ";
     std::cin >> login;
-    std::cout << "Придумайте пароль: ";
+    std::cout << "Choose a password: ";
     std::cin >> password;
 
     json body = { {"username", login}, {"password", password} };
@@ -34,7 +34,7 @@ void EMClient::registration() {
 
     // если регистрация успешна
     if (!result.empty()) {
-        std::cout << "Регистрация успешна!\n\n";
+        std::cout << "Registration successful!\n\n";
     }
     else {  // если регистрация не успешна
         login.clear();
@@ -44,14 +44,14 @@ void EMClient::registration() {
 void EMClient::enter_login_password() {
     std::string answer;
     do {
-        std::cout << "Вы уже зарегистрированы? (y/n): ";
+        std::cout << "Are you already registered? (y/n): ";
         std::cin >> answer;
     } while (answer != "y" && answer != "n");
 
     if (answer == "y") {  // если уже зарегистрирован
-        std::cout << "Введите логин: ";
+        std::cout << "Enter your login: ";
         std::cin >> login;
-        std::cout << "Введите пароль: ";
+        std::cout << "Enter your password: ";
         std::cin >> password;
     } else {
         registration();
@@ -69,7 +69,7 @@ bool EMClient::authorization() {
     }
 
     // если авторизация успешна
-    std::cout << "Авторизация успешна!\n\n";
+    std::cout << "Authorization successful!\n\n";
     token = result["token"];  // получаем токен
     is_admin = result["is_admin"];  // проверяем, является ли клиент администратором
     headers = { {"Authorization", "Bearer " + token} };  // заполняем заголовок http запроса
@@ -87,7 +87,7 @@ void EMClient::logout() {
 
 
 EMClient::~EMClient() {
-    std::cout << "Завершение сессии...";
+    std::cout << "Ending session...";
     logout();  // завершаем сессию
 }
 
@@ -102,7 +102,7 @@ void EMClient::show_movie_list() {
 
     // если есть данные о фильмах
     if (!movies.empty()) {
-        std::cout << "\tСписок фильмов:\n";
+        std::cout << "\tMovie list:\n";
         for (const auto& movie : movies) {
             std::cout << "\t- " << movie["title"] << " (" << movie["year"] << ")\n";
         }
@@ -113,7 +113,7 @@ void EMClient::show_movie_list() {
 void EMClient::watch_movie() {
     std::string title;
     std::cin.ignore();
-    std::cout << "Введите название фильма: ";
+    std::cout << "Enter the movie title: ";
     std::getline(std::cin, title);
 
     auto result = send_get("/check_watch?title=" + title);
@@ -138,14 +138,14 @@ void EMClient::add_movie() {
     // все делаем строками, т.к. на сервере есть обработка неверных типов данных
     std::string id, title, year, filepath;
 
-    std::cout << "Введите id: ";
+    std::cout << "Enter id: ";
     std::cin >> id;
     std::cin.ignore();
-    std::cout << "Введите название: ";
+    std::cout << "Enter the title: ";
     std::getline(std::cin, title);
-    std::cout << "Введите год: ";
+    std::cout << "Enter year: ";
     std::cin >> year;
-    std::cout << "Введите путь до HLS-плейлиста (Movies/ + ваш путь): ";
+    std::cout << "Enter the path to the HLS playlist (Movies/ + your path): ";
     std::cin >> filepath;
 
     // формируем тело нового фильма
