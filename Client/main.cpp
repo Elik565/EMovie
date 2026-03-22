@@ -30,7 +30,7 @@ int main() {
 
         // действия для администратора
         if (emclient_ptr->is_admin) {
-            std::cout << "4 -  Add a movie;\n";
+            std::cout << "4 - Add a movie;\n";
         }
 
         std::cout << "exit - Quit\n\n";
